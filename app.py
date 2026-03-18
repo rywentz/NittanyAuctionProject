@@ -6,11 +6,25 @@ from flask import Flask, render_template, request
 import sqlite3 as sql
 
 app = Flask(__name__)
-host = 'http://127.0.0.1:5000/'
+host = 'http://127.0.0.1:5000'
 
 @app.route('/')
 def homepage():
     return render_template('homepage.html')
+
+# @app.route('/welcome', methods=['POST', 'GET'])
+# def welcome():
+#     return render_template('welcome.html')
+
+# @app.route('/homepage', methods =["GET", "POST"])
+# def gfg():
+#     if request.method == "GET":
+#        # getting input with name = fname in HTML form
+#        email = request.form.get("email")
+#        # getting input with name = lname in HTML form
+#        pwd = request.form.get("pwd")
+#        return "login is "+ email + pwd
+#     return render_template("homepage.html")
 
 @app.route('/addpatient', methods=['POST', 'GET'])
 def check_name_on_add():
