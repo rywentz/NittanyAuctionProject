@@ -4,6 +4,7 @@
 
 from flask import Flask, render_template, request
 import sqlite3 as sql
+import hashlib
 
 app = Flask(__name__)
 host = 'http://127.0.0.1:5000'
@@ -52,6 +53,33 @@ def check_name_on_removal():
     return render_template('removepatient.html', error=error, result=result)
 
 
+
+@app.route('/login', methods=['POST', 'GET'])
+def login():
+    if request.method == 'POST':
+        email_user = request.form["email"]
+        password_user = request.form["password"]
+
+        connection = sql.connect('database.db')
+        connection.execute('CREATE TABLE IF NOT EXISTS Users(email TEXT PRIMARY KEY, password TEXT);')
+        cursor = connection.cursor()
+        cursor.execute('SELECT * FROM Users WHERE email = ?;', (email_user,))
+        user = cursor.fetchone()
+
+        if hashing(password_user) == user[1]:
+            print("YIPPEEE")
+
+
+
+
+    return render_template('login.html')
+
+@app.route('/welcome', methods=['POST', 'GET'])
+def welcome():
+    return render_template('welcome.html')
+
+
+
 def add_name(first_name, last_name):
     connection = sql.connect('database.db')
     # connect to database.db and create new patients table
@@ -79,7 +107,17 @@ def ret_data():
     return cursor.fetchall()
 
 
+
+#hashing algorithm that takes a word and hashes it to a SHA256 hash.
+def hashing(password):
+    sha256 = hashlib.sha256()
+    sha256.update(password.encode('utf-8'))
+    return sha256.hexdigest()
+
+
 if __name__ == "__main__":
+    print("this is hash of 'database' " + hashing("database"))
+    connection = sql.connect('database.db')
     app.run(debug=True)
 
 
