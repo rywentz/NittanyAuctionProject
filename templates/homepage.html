@@ -1,0 +1,74 @@
+{#
+# Ryan Wentz
+# CMPSC 431W
+# Professor Wang-Chien Lee
+# Web Programming Exercise
+# Due: 2/23/2026
+#
+#
+# This code is a modified version of the original template code given to us to use.
+# Original code credits to Penn State University CMPSC 431W Spring 2026 Semester
+#}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <title>Hospital Patient Portal</title>
+</head>
+
+<body style="background-color:AntiqueWhite">
+<h1 style="background-color:LightBlue; text-align: center"> Nittany Auction </h1>
+<h4 style = "text-align: center; background-color:Azure" > Welcome to Nittany Auction! Please log in below! .</h4>
+
+<br><br>
+
+
+<form class="form-inline" style="text-align:center" action="/addpatient">
+    <div class="form-group mb-2">
+        <label for="email">Email address:</label>
+        <input type="email@example.com" class="form-control" id="email">
+    </div>
+    <br>
+    <div class="form-group mx-sm-3 mb-2">
+        <label for="pwd">Password:</label>
+        <input type="Password" class="form-control" id="pwd">
+    </div>
+    <button type="submit" class="btn btn-success">Login</button>
+</form>
+
+<!--{# dropdown menu creation #}-->
+<!--<form id="form" style = "text-align: center">-->
+<!--  <label for="action">Choose an option:</label>-->
+<!--  <select name="action" id="action">-->
+<!--    <option value="">-&#45;&#45;&#45;&#45;</option>-->
+<!--    <option value="add">Add a patient</option>-->
+<!--    <option value="rem">Remove a patient</option>-->
+<!--  </select>-->
+<!--  <br><br>-->
+<!--  <button class="btn btn-success" type="submit">GO!</button>-->
+<!--</form>-->
+
+<!--{# Script for handling dropdown menu #}-->
+<!--<script>-->
+<!--    document.getElementById("form").addEventListener("submit", function(e) {-->
+<!--        e.preventDefault();-->
+
+<!--        {# grab action from dropdown #}-->
+<!--        const action = document.getElementById("action").value;-->
+
+<!--        {# properly handle sending user to /addpatient or /removepatient #}-->
+<!--        if (action === "add"){-->
+<!--            window.location.href = "/addpatient";-->
+<!--        }else if (action === "rem"){-->
+<!--            window.location.href = "/removepatient";-->
+<!--        }-->
+<!--    })-->
+<!--</script>-->
+
+</body>
+</html>
