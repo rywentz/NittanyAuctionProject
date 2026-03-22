@@ -121,12 +121,12 @@ def populate_users(filePath):
     cursor = connection.cursor()
     cursor.execute('CREATE TABLE IF NOT EXISTS Users(email TEXT PRIMARY KEY, password TEXT);')
 
-    with open(filePath, 'r') as csvfile:
+    with open(filePath, 'r', encoding="utf-8-sig", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
 
         for row in reader:
-            email = row['email'].strip()
-            password = row['password'].strip()
+            email = row["email"].strip()
+            password = row["password"].strip()
 
             hashed_password = hashing(password)
 
@@ -135,6 +135,7 @@ def populate_users(filePath):
 
 if __name__ == "__main__":
     print("this is hash of 'database' " + hashing("database"))
+    populate_users(csvPath)
     connection = sql.connect('database.db')
     app.run(debug=True)
 
