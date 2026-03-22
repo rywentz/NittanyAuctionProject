@@ -58,6 +58,7 @@ def check_name_on_removal():
 
 @app.route('/login', methods=['POST', 'GET'])
 def login():
+    error = None
     if request.method == 'POST':
         email_user = request.form["email"]
         password_user = request.form["password"]
@@ -68,13 +69,52 @@ def login():
         cursor.execute('SELECT * FROM Users WHERE email = ?;', (email_user,))
         user = cursor.fetchone()
 
-        if hashing(password_user) == user[1]:
-            print("YIPPEEE")
+        if user and hashing(password_user) == user[1]:
+            try:
+                cursor.execute('SELECT * FROM Helpdesk WHERE email = ?;', (email_user,))
+                if cursor.fetchone():
+                    return render_template('welcome.html', role='HelpDesk', email=email_user)
+            except sql.OperationalError:
+                pass
+            try:
+                cursor.execute('SELECT * FROM Sellers WHERE email = ?;', (email_user,))
+                if cursor.fetchone():
+                    return render_template('welcome.html', role='Seller', email=email_user)
+            except sql.OperationalError:
+                pass
+            return render_template('welcome.html', role='Buyer', email=email_user)
+        else:
+            error = 'Incorrect password or email, try again.'
 
 
 
 
-    return render_template('login.html')
+    return render_template('login.html', error=error)
+
+@app.route('/createaccount', methods=['POST', 'GET'])
+def createaccount():
+    error = None
+    success = None
+    if request.method == 'POST':
+        email_user = request.form["email"]
+        password_user = request.form["password"]
+
+        connection = sql.connect('database.db')
+        cursor = connection.cursor()
+
+        # Check if email already exists
+        cursor.execute('SELECT * FROM Users WHERE email = ?;', (email_user,))
+        existing = cursor.fetchone()
+
+        if existing:
+            error = 'An account with that email already exists.'
+        else:
+            hashed_password = hashing(password_user)
+            cursor.execute('INSERT INTO Users (email, password) VALUES (?, ?);', (email_user, hashed_password))
+            connection.commit()
+            success = 'Account created successfully! You can now log in.'
+
+    return render_template('createaccount.html', error=error, success=success)
 
 @app.route('/welcome', methods=['POST', 'GET'])
 def welcome():
