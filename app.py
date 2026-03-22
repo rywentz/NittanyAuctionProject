@@ -70,6 +70,7 @@ def login():
 
         if hashing(password_user) == user[1]:
             print("YIPPEEE")
+            return render_template('welcome.html')
 
 
 
