@@ -130,7 +130,7 @@ def populate_users(filePath):
 
             hashed_password = hashing(password)
 
-            cursor.execute('INSERT INTO Users (email, password) VALUES (?,?);', (email, hashed_password))
+            cursor.execute('INSERT OR IGNORE INTO Users (email, password) VALUES (?,?);', (email, hashed_password))
     connection.commit()
 
 if __name__ == "__main__":
