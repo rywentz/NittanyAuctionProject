@@ -1,13 +1,15 @@
-
 # This code is a modified version of the original template code given to us to use.
 # Original code credits to Penn State University CMPSC 431W Spring 2026 Semester
 
+import csv
 from flask import Flask, render_template, request
 import sqlite3 as sql
 import hashlib
 
 app = Flask(__name__)
 host = 'http://127.0.0.1:5000'
+
+csvPath = 'NittanyAuctionDataset_v1/Users.csv'
 
 @app.route('/')
 def homepage():
@@ -114,6 +116,22 @@ def hashing(password):
     sha256.update(password.encode('utf-8'))
     return sha256.hexdigest()
 
+def populate_users(filePath):
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+    cursor.execute('CREATE TABLE IF NOT EXISTS Users(email TEXT PRIMARY KEY, password TEXT);')
+
+    with open(filePath, 'r') as csvfile:
+        reader = csv.DictReader(csvfile)
+
+        for row in reader:
+            email = row['email'].strip()
+            password = row['password'].strip()
+
+            hashed_password = hashing(password)
+
+            cursor.execute('INSERT INTO Users (email, password) VALUES (?,?);', (email, hashed_password))
+    connection.commit()
 
 if __name__ == "__main__":
     print("this is hash of 'database' " + hashing("database"))
