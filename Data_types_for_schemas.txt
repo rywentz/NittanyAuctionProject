@@ -1,0 +1,98 @@
+Address
+address_ID TEXT
+zipcode INT
+street_num INT
+street_name TEXT
+
+
+Auction_Listings
+seller_email TEXT
+listing_id INT
+category TEXT
+auction_title TEXT
+product_name TEXT
+product_description TEXT
+quantity INT
+reserve_price TEXT
+max_bids INT
+status INT
+
+
+Bidders
+email TEXT
+first_name TEXT
+last_name TEXT
+age INT
+home_address_id TEXT
+major TEXT
+
+
+Bids
+bid_id INT
+seller_email TEXT
+listing_id INT
+bidder_email TEXT
+bid_price INT
+
+
+Categories
+parent_category TEXT
+category_name TEXT
+
+
+Credit_Cards
+credit_card_num TEXT
+card_type TEXT
+expire_month INT
+expire_year INT
+security_code INT
+owner_email TEXT
+
+
+helpdesks
+email TEXT
+position TEXT
+
+
+Local_Vendors
+email TEXT PRIMARY KEY
+business_name TEXT
+business_address_id TEXT
+customer_service_phone_number TEXT
+
+
+Ratings
+bidder_email TEXT
+seller_email TEXT
+rating_date TEXT
+rating INT
+rating_desc TEXT
+
+
+Requests
+request_id INT
+sender_email TEXT
+helpdesk_staff_email TEXT
+request_type TEXT
+request_desc TEXT
+request_status INT
+
+
+Sellers
+email TEXT
+bank_routing_number TEXT
+bank_account_number TEXT
+balance REAL
+
+
+Transactions
+transaction_id INT
+seller_email TEXT
+listing_id, bidder_email, date TEXT
+payment REAL
+
+
+Zipcode_Info
+zipcode INT
+city TEXT
+state TEXT
