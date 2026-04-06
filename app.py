@@ -110,6 +110,12 @@ def view_account():
 
     return render_template('account.html')
 
+
+
+@app.route('/catalog', methods=['POST', 'GET'])
+def catalog():
+    return render_template('catalog.html')
+
 #hashing algorithm that takes a word and hashes it to a SHA256 hash.
 def hashing(password):
     sha256 = hashlib.sha256()
@@ -428,7 +434,6 @@ if __name__ == "__main__":
 
     populate_transactions(Transactions_csvPath)
     populate_zips(Zipcode_Info_csvPath)
-
 
 
     connection = sql.connect('database.db')
