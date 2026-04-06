@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
           integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-    <title>Hospital Patient Portal</title>
+    <title>Nittany Auction</title>
 </head>
 
 <body style="background-color:AntiqueWhite">
@@ -14,6 +14,17 @@
 <h4 style = "text-align: center; background-color:Azure" >
     Logged in as: {{ email }} ({{ role }})
 </h4>
+
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 0 200px;">
+    <form action="/account" method="GET">
+        <button type="submit" class="btn btn-info">Account Information</button>
+    </form>
+    <form action="/login">
+        <button type="submit" class="btn btn-danger">Logout</button>
+    </form>
+</div>
+
+
 <br>
 <br>
 

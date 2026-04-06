@@ -93,6 +93,23 @@ def createaccount():
 def welcome():
     return render_template('welcome.html')
 
+@app.route('/logout')
+def logout():
+    ##logout logic
+    return render_template('login.html')
+
+
+@app.route('/account', methods=['POST', 'GET'])
+def view_account():
+    ##pull account data from db
+    if request.method == 'GET':
+        connection = sql.connect('database.db')
+
+
+
+
+    return render_template('account.html')
+
 #hashing algorithm that takes a word and hashes it to a SHA256 hash.
 def hashing(password):
     sha256 = hashlib.sha256()
