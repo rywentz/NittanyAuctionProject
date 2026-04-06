@@ -2,11 +2,13 @@
 # Original code credits to Penn State University CMPSC 431W Spring 2026 Semester
 
 import csv
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session, sessions
 import sqlite3 as sql
+
 import hashlib
 
 app = Flask(__name__)
+app.secret_key = 'NITTANYAUCTION'
 host = 'http://127.0.0.1:5000'
 
 
@@ -45,6 +47,7 @@ def login():
         user = cursor.fetchone()
 
         if user and hashing(password_user) == user[1]:
+            session['email'] = email_user
             try:
                 cursor.execute('SELECT * FROM Helpdesk WHERE email = ?;', (email_user,))
                 if cursor.fetchone():
@@ -89,26 +92,33 @@ def createaccount():
 
     return render_template('createaccount.html', error=error, success=success)
 
-@app.route('/welcome', methods=['POST', 'GET'])
+@app.route('/welcome/', methods=['POST', 'GET'])    #<email>
 def welcome():
     return render_template('welcome.html')
 
 @app.route('/logout')
 def logout():
     ##logout logic
+    session.clear()
     return render_template('login.html')
 
 
 @app.route('/account', methods=['POST', 'GET'])
 def view_account():
     ##pull account data from db
-    if request.method == 'GET':
-        connection = sql.connect('database.db')
+    email = session.get('email')
+    user = pull_user(email)
+    return render_template('account.html', fname = user[0], lname = user[1])
 
+def pull_user(email):
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
 
-
-
-    return render_template('account.html')
+    cursor.execute('SELECT first_name, last_name FROM Users AS u, Bidders AS b, Sellers AS s, Helpdesk AS h '
+                        'WHERE u.email = ? AND (u.email = b.email OR u.email = s.email OR u.email = h.email)', (email,))
+    user = cursor.fetchone()
+    connection.close()
+    return user
 
 
 
@@ -434,6 +444,8 @@ if __name__ == "__main__":
 
     populate_transactions(Transactions_csvPath)
     populate_zips(Zipcode_Info_csvPath)
+
+
 
 
     connection = sql.connect('database.db')
