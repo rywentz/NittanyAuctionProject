@@ -51,15 +51,18 @@ def login():
             try:
                 cursor.execute('SELECT * FROM Helpdesk WHERE email = ?;', (email_user,))
                 if cursor.fetchone():
+                    session['role'] = 'HelpDesk'
                     return render_template('welcome.html', role='HelpDesk', email=email_user)
             except sql.OperationalError:
                 pass
             try:
                 cursor.execute('SELECT * FROM Sellers WHERE email = ?;', (email_user,))
                 if cursor.fetchone():
+                    session['role'] = 'Seller'
                     return render_template('welcome.html', role='Seller', email=email_user)
             except sql.OperationalError:
                 pass
+            session['role'] = 'Buyer'
             return render_template('welcome.html', role='Buyer', email=email_user)
         else:
             error = 'Incorrect password or email, try again.'
@@ -94,7 +97,7 @@ def createaccount():
 
 @app.route('/welcome/', methods=['POST', 'GET'])    #<email>
 def welcome():
-    return render_template('welcome.html')
+    return render_template('welcome.html', email=session.get('email'), role=session.get('role'))
 
 @app.route('/logout')
 def logout():
@@ -108,7 +111,7 @@ def view_account():
     ##pull account data from db
     email = session.get('email')
     user = pull_user(email)
-    return render_template('account.html', fname = user[0], lname = user[1])
+    return render_template('account.html', email=session.get('email'), fname=user[0], lname=user[1], role=session.get('role'))
 
 def pull_user(email):
     connection = sql.connect('database.db')
