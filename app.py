@@ -28,6 +28,7 @@ Sellers_csvPath = 'NittanyAuctionDataset_v1/Sellers.csv'
 Transactions_csvPath = 'NittanyAuctionDataset_v1/Transactions.csv'
 Users_csvPath = 'NittanyAuctionDataset_v1/Users.csv'
 Zipcode_Info_csvPath = 'NittanyAuctionDataset_v1/Zipcode_Info.csv'
+Image_Path_cvsPath = 'NittanyAuctionDataset_v1/Image_Paths.csv'
 
 @app.route('/')
 def homepage():
@@ -125,9 +126,25 @@ def pull_user(email):
 
 
 
+# returns the path of the image based on the image name (used when crossing tables)
+def pull_image(name):
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    cursor.execute('SELECT path FROM Image_Paths WHERE product_name = ?', (name,))
+
+    path = cursor.fetchone()
+
+    connection.close()
+    return path[0]
+
+
+
 @app.route('/catalog', methods=['POST', 'GET'])
 def catalog():
-    return render_template('catalog.html')
+    path = pull_image("Steak Rolls")
+    
+    return render_template('catalog.html', path=path )
 
 #hashing algorithm that takes a word and hashes it to a SHA256 hash.
 def hashing(password):
@@ -427,6 +444,25 @@ def populate_zips(filePath):
     connection.commit()
     connection.close()
 
+def  populate_image_paths(filePath):
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+    cursor.execute('CREATE TABLE IF NOT EXISTS Image_Paths(product_name TEXT PRIMARY KEY, path TEXT);')
+
+    with open(filePath, 'r', encoding="utf-8-sig", newline="") as csvfile:
+        reader = csv.DictReader(csvfile)
+
+        for row in reader:
+            product_name = row["product_name"].strip()
+            path = row["path"].strip()
+
+            cursor.execute('INSERT OR IGNORE INTO Image_Paths(product_name, path) VALUES (?, ?);',(product_name, path))
+    connection.commit()
+    connection.close()
+
+
+
+
 if __name__ == "__main__":
     #print("this is hash of 'database' " + hashing("database")) -------testing print
     populate_users(Users_csvPath)
@@ -447,6 +483,11 @@ if __name__ == "__main__":
 
     populate_transactions(Transactions_csvPath)
     populate_zips(Zipcode_Info_csvPath)
+    populate_image_paths(Image_Path_cvsPath)
+
+    image = pull_image("Logo")
+
+    print(image)
 
 
 
