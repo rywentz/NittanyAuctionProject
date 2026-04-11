@@ -171,8 +171,6 @@ def pull_image(name):
 
 @app.route('/catalog', methods=['POST', 'GET'])
 def catalog():
-
-
     connection = sql.connect('database.db')
     cursor = connection.cursor()
     cursor.execute('SELECT DISTINCT parent_category FROM Categories')
@@ -181,6 +179,13 @@ def catalog():
 
     return render_template('catalog.html', categories=categories)
 
+@app.route('/catalog/subcatalog', methods=['POST', 'GET'])
+def subcatalog():
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+    connection.close()
+
+    return render_template('subcatalog.html',)
 
 # hashing algorithm that takes a word and hashes it to a SHA256 hash.
 def hashing(password):
