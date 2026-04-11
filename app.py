@@ -11,8 +11,7 @@ app = Flask(__name__)
 app.secret_key = 'NITTANYAUCTION'
 host = 'http://127.0.0.1:5000'
 
-
-#Path to all CVS files
+# Path to all CVS files
 
 Address_csvPath = 'NittanyAuctionDataset_v1/Address.csv'
 Auction_Listings_csvPath = 'NittanyAuctionDataset_v1/Auction_Listings.csv'
@@ -30,9 +29,11 @@ Users_csvPath = 'NittanyAuctionDataset_v1/Users.csv'
 Zipcode_Info_csvPath = 'NittanyAuctionDataset_v1/Zipcode_Info.csv'
 Image_Path_cvsPath = 'NittanyAuctionDataset_v1/Image_Paths.csv'
 
+
 @app.route('/')
 def homepage():
     return render_template('homepage.html')
+
 
 @app.route('/login', methods=['POST', 'GET'])
 def login():
@@ -68,8 +69,8 @@ def login():
         else:
             error = 'Incorrect password or email, try again.'
 
-
     return render_template('login.html', error=error)
+
 
 @app.route('/createaccount', methods=['POST', 'GET'])
 def createaccount():
@@ -96,9 +97,11 @@ def createaccount():
 
     return render_template('createaccount.html', error=error, success=success)
 
-@app.route('/welcome/', methods=['POST', 'GET'])    #<email>
+
+@app.route('/welcome/', methods=['POST', 'GET'])  # <email>
 def welcome():
     return render_template('welcome.html', email=session.get('email'), role=session.get('role'))
+
 
 @app.route('/logout')
 def logout():
@@ -112,19 +115,46 @@ def view_account():
     ##pull account data from db
     email = session.get('email')
     user = pull_user(email)
-    return render_template('account.html', email=session.get('email'), fname=user[0], lname=user[1], role=session.get('role'))
+    address_info = pull_address(email)
+    return render_template('account.html', email=session.get('email'), fname=user[0], lname=user[1],
+                           role=session.get('role'),
+                           address=address_info)
+
 
 def pull_user(email):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
 
     cursor.execute('SELECT first_name, last_name FROM Users AS u, Bidders AS b, Sellers AS s, Helpdesk AS h '
-                        'WHERE u.email = ? AND (u.email = b.email OR u.email = s.email OR u.email = h.email)', (email,))
+                   'WHERE u.email = ? AND (u.email = b.email OR u.email = s.email OR u.email = h.email)', (email,))
     user = cursor.fetchone()
     connection.close()
     return user
 
 
+# returns an address string based on the logged in user's email
+# TODO: confirm that pull_address works for all emails - even local vendor emails (business emails)
+def pull_address(email):
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    cursor.execute('SELECT A.street_num, A.street_name, Z.city, Z.state, A.zipcode FROM Bidders AS B, Address AS A, Zipcode_Info AS Z WHERE B.email = ? AND B.home_address_id = A.address_ID AND A.zipcode = Z.zipcode', (email,))
+
+    address_info = cursor.fetchone()
+    address = "{} {} {} {} {}".format(address_info[0], address_info[1], address_info[2], address_info[3], address_info[4])
+    connection.close()
+    return address
+
+# returns card information array containing card information based on the logged-in user's email
+# TODO: confirm that no user has more than one card on file, if so, change so that cursor.fetchall() and iterate through
+def pull_credit_card(email):
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    cursor.execute('SELECT C.credit_card_num, C.card_type, C.expire_month, C.expire_year, C.security_code FROM Credit_Cards C, Users U WHERE U.email = ? AND U.email = C.owner_email', (email,))
+
+    card_info = cursor.fetchone()
+    return card_info
 
 # returns the path of the image based on the image name (used when crossing tables)
 def pull_image(name):
@@ -139,18 +169,25 @@ def pull_image(name):
     return path[0]
 
 
-
 @app.route('/catalog', methods=['POST', 'GET'])
 def catalog():
-    path = pull_image("Steak Rolls")
-    
-    return render_template('catalog.html', path=path )
 
-#hashing algorithm that takes a word and hashes it to a SHA256 hash.
+
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+    cursor.execute('SELECT DISTINCT parent_category FROM Categories')
+    categories = [row[0] for row in cursor.fetchall()]
+    connection.close()
+
+    return render_template('catalog.html', categories=categories)
+
+
+# hashing algorithm that takes a word and hashes it to a SHA256 hash.
 def hashing(password):
     sha256 = hashlib.sha256()
     sha256.update(password.encode('utf-8'))
     return sha256.hexdigest()
+
 
 def populate_users(filePath):
     connection = sql.connect('database.db')
@@ -170,10 +207,12 @@ def populate_users(filePath):
     connection.commit()
     connection.close()
 
+
 def populate_addresses(filePath):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
-    cursor.execute('CREATE TABLE IF NOT EXISTS Address(address_ID TEXT PRIMARY KEY, zipcode INT, street_num INT, street_name TEXT);')
+    cursor.execute(
+        'CREATE TABLE IF NOT EXISTS Address(address_ID TEXT PRIMARY KEY, zipcode INT, street_num INT, street_name TEXT);')
 
     with open(filePath, 'r', encoding="utf-8-sig", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
@@ -184,15 +223,19 @@ def populate_addresses(filePath):
             street_num = int(row["street_num"].strip())
             street_name = row["street_name"].strip()
 
-            cursor.execute('INSERT OR IGNORE INTO Address(address_ID, zipcode, street_num, street_name) VALUES (?, ?, ?, ?);', (address_ID, zipcode, street_num, street_name))
+            cursor.execute(
+                'INSERT OR IGNORE INTO Address(address_ID, zipcode, street_num, street_name) VALUES (?, ?, ?, ?);',
+                (address_ID, zipcode, street_num, street_name))
     connection.commit()
     connection.close()
+
 
 def populate_auction_listings(filePath):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
 
-    cursor.execute('CREATE TABLE IF NOT EXISTS Auction_Listings(seller_email TEXT, listing_id INT, category TEXT, auction_title TEXT, product_name TEXT, product_description TEXT, quantity INT, reserve_price TEXT, max_bids INT, status INT, PRIMARY KEY(seller_email, listing_id));')
+    cursor.execute(
+        'CREATE TABLE IF NOT EXISTS Auction_Listings(seller_email TEXT, listing_id INT, category TEXT, auction_title TEXT, product_name TEXT, product_description TEXT, quantity INT, reserve_price TEXT, max_bids INT, status INT, PRIMARY KEY(seller_email, listing_id));')
 
     with open(filePath, 'r', encoding="utf-8-sig", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
@@ -209,15 +252,20 @@ def populate_auction_listings(filePath):
             max_bids = int(row["Max_bids"].strip())
             status = int(row["Status"].strip())
 
-            cursor.execute('INSERT OR IGNORE INTO Auction_Listings (seller_email, listing_id, category, auction_title, product_name, product_description, quantity, reserve_price, max_bids, status) VALUES (?,?,?,?,?,?,?,?,?,?);', (seller_email, listing_id, category, auction_title, product_name, product_description, quantity, reserve_price, max_bids, status))
+            cursor.execute(
+                'INSERT OR IGNORE INTO Auction_Listings (seller_email, listing_id, category, auction_title, product_name, product_description, quantity, reserve_price, max_bids, status) VALUES (?,?,?,?,?,?,?,?,?,?);',
+                (seller_email, listing_id, category, auction_title, product_name, product_description, quantity,
+                 reserve_price, max_bids, status))
     connection.commit()
     connection.close()
+
 
 def populate_bidders(filePath):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
     cursor.execute("PRAGMA foreign_keys = ON;")
-    cursor.execute('CREATE TABLE IF NOT EXISTS Bidders(email TEXT PRIMARY KEY, first_name TEXT, last_name TEXT, age INT, home_address_id TEXT, major TEXT, FOREIGN KEY(home_address_id) REFERENCES Address(address_ID), FOREIGN KEY(email) REFERENCES Users(email));')
+    cursor.execute(
+        'CREATE TABLE IF NOT EXISTS Bidders(email TEXT PRIMARY KEY, first_name TEXT, last_name TEXT, age INT, home_address_id TEXT, major TEXT, FOREIGN KEY(home_address_id) REFERENCES Address(address_ID), FOREIGN KEY(email) REFERENCES Users(email));')
 
     with open(filePath, 'r', encoding="utf-8-sig", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
@@ -230,37 +278,42 @@ def populate_bidders(filePath):
             home_address_id = row["home_address_id"].strip()
             major = row["major"].strip()
 
-
-            cursor.execute('INSERT OR IGNORE INTO Bidders(email, first_name, last_name, age, home_address_id, major) VALUES (?, ?, ?, ?, ?, ?);', (email, first_name, last_name, age, home_address_id, major))
+            cursor.execute(
+                'INSERT OR IGNORE INTO Bidders(email, first_name, last_name, age, home_address_id, major) VALUES (?, ?, ?, ?, ?, ?);',
+                (email, first_name, last_name, age, home_address_id, major))
     connection.commit()
     connection.close()
 
+
 def populate_bids(filePath):
-        connection = sql.connect('database.db')
-        cursor = connection.cursor()
-        cursor.execute("PRAGMA foreign_keys = ON;")
-        cursor.execute(
-            'CREATE TABLE IF NOT EXISTS Bids(bid_id INT PRIMARY KEY, seller_email TEXT, listing_id INT, bidder_email TEXT, bid_price INT);')
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+    cursor.execute("PRAGMA foreign_keys = ON;")
+    cursor.execute(
+        'CREATE TABLE IF NOT EXISTS Bids(bid_id INT PRIMARY KEY, seller_email TEXT, listing_id INT, bidder_email TEXT, bid_price INT);')
 
-        with open(filePath, 'r', encoding="utf-8-sig", newline="") as csvfile:
-            reader = csv.DictReader(csvfile)
+    with open(filePath, 'r', encoding="utf-8-sig", newline="") as csvfile:
+        reader = csv.DictReader(csvfile)
 
-            for row in reader:
-                bid_int = row["Bid_ID"].strip()
-                seller_email = row["Seller_Email"].strip()
-                listing_id = int(row["Listing_ID"].strip())
-                bidder_email = row["Bidder_Email"].strip()
-                bid_price = int(row["Bid_Price"].strip())
+        for row in reader:
+            bid_int = row["Bid_ID"].strip()
+            seller_email = row["Seller_Email"].strip()
+            listing_id = int(row["Listing_ID"].strip())
+            bidder_email = row["Bidder_Email"].strip()
+            bid_price = int(row["Bid_Price"].strip())
 
-                cursor.execute('INSERT OR IGNORE INTO Bids(bid_id, seller_email, listing_id, bidder_email, bid_price) VALUES (?, ?, ?, ?, ?);', (bid_int, seller_email, listing_id, bidder_email, bid_price))
-        connection.commit()
-        connection.close()
+            cursor.execute(
+                'INSERT OR IGNORE INTO Bids(bid_id, seller_email, listing_id, bidder_email, bid_price) VALUES (?, ?, ?, ?, ?);',
+                (bid_int, seller_email, listing_id, bidder_email, bid_price))
+    connection.commit()
+    connection.close()
+
 
 def populate_categories(filePath):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
-    #cursor.execute("PRAGMA foreign_keys = ON;")
-    #might need a foreign key constraint on categories. not sure as of yet
+    # cursor.execute("PRAGMA foreign_keys = ON;")
+    # might need a foreign key constraint on categories. not sure as of yet
     cursor.execute('CREATE TABLE IF NOT EXISTS Categories(category_name TEXT PRIMARY KEY, parent_category TEXT);')
 
     with open(filePath, 'r', encoding="utf-8-sig", newline="") as csvfile:
@@ -270,15 +323,18 @@ def populate_categories(filePath):
             category_name = row["category_name"].strip()
             parent_category = row["parent_category"].strip()
 
-            cursor.execute('INSERT OR IGNORE INTO Categories(category_name, parent_category) VALUES (?, ?);', (category_name, parent_category))
+            cursor.execute('INSERT OR IGNORE INTO Categories(category_name, parent_category) VALUES (?, ?);',
+                           (category_name, parent_category))
     connection.commit()
     connection.close()
+
 
 def populate_credit_cards(filePath):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
     cursor.execute("PRAGMA foreign_keys = ON;")
-    cursor.execute('CREATE TABLE IF NOT EXISTS Credit_Cards(credit_card_num TEXT PRIMARY KEY, card_type TEXT, expire_month INT, expire_year INT, security_code INT, owner_email TEXT, FOREIGN KEY(owner_email) REFERENCES Bidders(email));')
+    cursor.execute(
+        'CREATE TABLE IF NOT EXISTS Credit_Cards(credit_card_num TEXT PRIMARY KEY, card_type TEXT, expire_month INT, expire_year INT, security_code INT, owner_email TEXT, FOREIGN KEY(owner_email) REFERENCES Bidders(email));')
 
     with open(filePath, 'r', encoding="utf-8-sig", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
@@ -297,29 +353,32 @@ def populate_credit_cards(filePath):
     connection.commit()
     connection.close()
 
+
 def populate_helpdesk(filePath):
-        connection = sql.connect('database.db')
-        cursor = connection.cursor()
-        cursor.execute("PRAGMA foreign_keys = ON;")
-        cursor.execute('CREATE TABLE IF NOT EXISTS Helpdesk(email TEXT PRIMARY KEY, position TEXT);')
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+    cursor.execute("PRAGMA foreign_keys = ON;")
+    cursor.execute('CREATE TABLE IF NOT EXISTS Helpdesk(email TEXT PRIMARY KEY, position TEXT);')
 
-        with open(filePath, 'r', encoding="utf-8-sig", newline="") as csvfile:
-            reader = csv.DictReader(csvfile)
+    with open(filePath, 'r', encoding="utf-8-sig", newline="") as csvfile:
+        reader = csv.DictReader(csvfile)
 
-            for row in reader:
-                email = row["email"].strip()
-                position = row["Position"].strip()
+        for row in reader:
+            email = row["email"].strip()
+            position = row["Position"].strip()
 
-                cursor.execute(
-                    'INSERT OR IGNORE INTO Helpdesk(email, position) VALUES (?, ?);',(email, position))
-        connection.commit()
-        connection.close()
+            cursor.execute(
+                'INSERT OR IGNORE INTO Helpdesk(email, position) VALUES (?, ?);', (email, position))
+    connection.commit()
+    connection.close()
+
 
 def populate_local_vendors(filePath):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
     cursor.execute("PRAGMA foreign_keys = ON;")
-    cursor.execute('CREATE TABLE IF NOT EXISTS Local_Vendors(email TEXT PRIMARY KEY, business_name TEXT, business_address_id TEXT, customer_service_phone_number TEXT, FOREIGN KEY(email) REFERENCES Sellers(email));')
+    cursor.execute(
+        'CREATE TABLE IF NOT EXISTS Local_Vendors(email TEXT PRIMARY KEY, business_name TEXT, business_address_id TEXT, customer_service_phone_number TEXT, FOREIGN KEY(email) REFERENCES Sellers(email));')
 
     with open(filePath, 'r', encoding="utf-8-sig", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
@@ -330,19 +389,22 @@ def populate_local_vendors(filePath):
             business_address_id = row["Business_Address_ID"].strip()
             customer_service_phone_number = row["Customer_Service_Phone_Number"].strip()
 
-
-            cursor.execute('INSERT OR IGNORE INTO Local_Vendors(email, business_name, business_address_id, customer_service_phone_number) VALUES (?, ?, ?, ?);', (email, business_name, business_address_id, customer_service_phone_number))
+            cursor.execute(
+                'INSERT OR IGNORE INTO Local_Vendors(email, business_name, business_address_id, customer_service_phone_number) VALUES (?, ?, ?, ?);',
+                (email, business_name, business_address_id, customer_service_phone_number))
     connection.commit()
     connection.close()
+
 
 def populate_rating(filePath):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
     cursor.execute("PRAGMA foreign_keys = ON;")
-    cursor.execute('CREATE TABLE IF NOT EXISTS Rating(bidder_email TEXT, seller_email TEXT, rating_date TEXT, rating INT CHECK(rating BETWEEN 1 and 5), rating_desc TEXT,'
-                   'PRIMARY KEY (bidder_email, seller_email, rating_date),'
-                   'FOREIGN KEY (bidder_email) REFERENCES Bidders(email),'
-                   'FOREIGN KEY (seller_email) REFERENCES Sellers(email));')
+    cursor.execute(
+        'CREATE TABLE IF NOT EXISTS Rating(bidder_email TEXT, seller_email TEXT, rating_date TEXT, rating INT CHECK(rating BETWEEN 1 and 5), rating_desc TEXT,'
+        'PRIMARY KEY (bidder_email, seller_email, rating_date),'
+        'FOREIGN KEY (bidder_email) REFERENCES Bidders(email),'
+        'FOREIGN KEY (seller_email) REFERENCES Sellers(email));')
 
     with open(filePath, 'r', encoding="utf-8-sig", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
@@ -361,15 +423,19 @@ def populate_rating(filePath):
             rating = int(row["Rating"].strip())
             rating_desc = row["Rating_Desc"].strip()
 
-            cursor.execute('INSERT OR IGNORE INTO Rating(bidder_email, seller_email, rating_date, rating, rating_desc) VALUES (?, ?, ?, ?, ?);', (bidder_email, seller_email, rating_date, rating, rating_desc))
+            cursor.execute(
+                'INSERT OR IGNORE INTO Rating(bidder_email, seller_email, rating_date, rating, rating_desc) VALUES (?, ?, ?, ?, ?);',
+                (bidder_email, seller_email, rating_date, rating, rating_desc))
     connection.commit()
     connection.close()
+
 
 def populate_requests(filePath):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
     cursor.execute("PRAGMA foreign_keys = ON;")
-    cursor.execute('CREATE TABLE IF NOT EXISTS Requests(request_id INT PRIMARY KEY, sender_email TEXT, helpdesk_staff_email TEXT, request_type TEXT, request_desc TEXT, request_status INT);')
+    cursor.execute(
+        'CREATE TABLE IF NOT EXISTS Requests(request_id INT PRIMARY KEY, sender_email TEXT, helpdesk_staff_email TEXT, request_type TEXT, request_desc TEXT, request_status INT);')
 
     with open(filePath, 'r', encoding="utf-8-sig", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
@@ -383,15 +449,18 @@ def populate_requests(filePath):
             request_status = int(row["request_status"].strip())
 
             cursor.execute(
-                'INSERT OR IGNORE INTO Requests(request_id, sender_email, helpdesk_staff_email, request_type, request_desc, request_status) VALUES (?, ?, ?, ?, ?, ?);', (request_id, sender_email, helpdesk_staff_email, request_type, request_desc, request_status))
+                'INSERT OR IGNORE INTO Requests(request_id, sender_email, helpdesk_staff_email, request_type, request_desc, request_status) VALUES (?, ?, ?, ?, ?, ?);',
+                (request_id, sender_email, helpdesk_staff_email, request_type, request_desc, request_status))
     connection.commit()
     connection.close()
+
 
 def populate_sellers(filePath):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
     cursor.execute("PRAGMA foreign_keys = ON;")
-    cursor.execute('CREATE TABLE IF NOT EXISTS Sellers(email TEXT PRIMARY KEY, bank_routing_number TEXT, bank_account_number TEXT, balance REAL, FOREIGN KEY (email) REFERENCES Users(email));')
+    cursor.execute(
+        'CREATE TABLE IF NOT EXISTS Sellers(email TEXT PRIMARY KEY, bank_routing_number TEXT, bank_account_number TEXT, balance REAL, FOREIGN KEY (email) REFERENCES Users(email));')
 
     with open(filePath, 'r', encoding="utf-8-sig", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
@@ -402,15 +471,19 @@ def populate_sellers(filePath):
             bank_account_number = row["bank_account_number"].strip()
             balance = float(row["balance"].strip())
 
-            cursor.execute('INSERT OR IGNORE INTO Sellers(email, bank_routing_number, bank_account_number, balance) VALUES (?, ?, ?, ?);', (email, bank_routing_number, bank_account_number, balance))
+            cursor.execute(
+                'INSERT OR IGNORE INTO Sellers(email, bank_routing_number, bank_account_number, balance) VALUES (?, ?, ?, ?);',
+                (email, bank_routing_number, bank_account_number, balance))
     connection.commit()
     connection.close()
+
 
 def populate_transactions(filePath):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
     cursor.execute("PRAGMA foreign_keys = ON;")
-    cursor.execute('CREATE TABLE IF NOT EXISTS Transactions(transaction_id INT PRIMARY KEY, seller_email TEXT, listing_id INT, bidder_email, date TEXT, payment REAL, FOREIGN KEY (seller_email, listing_id) REFERENCES Auction_Listings(seller_email, listing_id), FOREIGN KEY (bidder_email) REFERENCES Users(email));')
+    cursor.execute(
+        'CREATE TABLE IF NOT EXISTS Transactions(transaction_id INT PRIMARY KEY, seller_email TEXT, listing_id INT, bidder_email, date TEXT, payment REAL, FOREIGN KEY (seller_email, listing_id) REFERENCES Auction_Listings(seller_email, listing_id), FOREIGN KEY (bidder_email) REFERENCES Users(email));')
 
     with open(filePath, 'r', encoding="utf-8-sig", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
@@ -423,9 +496,12 @@ def populate_transactions(filePath):
             date = row["Date"].strip()
             payment = float(row["Payment"].strip())
 
-            cursor.execute('INSERT OR IGNORE INTO Transactions(transaction_id, seller_email, listing_id, bidder_email, date, payment) VALUES (?, ?, ?, ?, ?, ?);', (transaction_id, seller_email, listing_id, bidder_email, date, payment))
+            cursor.execute(
+                'INSERT OR IGNORE INTO Transactions(transaction_id, seller_email, listing_id, bidder_email, date, payment) VALUES (?, ?, ?, ?, ?, ?);',
+                (transaction_id, seller_email, listing_id, bidder_email, date, payment))
     connection.commit()
     connection.close()
+
 
 def populate_zips(filePath):
     connection = sql.connect('database.db')
@@ -440,11 +516,13 @@ def populate_zips(filePath):
             city = row["city"].strip()
             state = row["state"].strip()
 
-            cursor.execute('INSERT OR IGNORE INTO Zipcode_Info(zipcode, city, state) VALUES (?, ?, ?);', (zipcode, city, state))
+            cursor.execute('INSERT OR IGNORE INTO Zipcode_Info(zipcode, city, state) VALUES (?, ?, ?);',
+                           (zipcode, city, state))
     connection.commit()
     connection.close()
 
-def  populate_image_paths(filePath):
+
+def populate_image_paths(filePath):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
     cursor.execute('CREATE TABLE IF NOT EXISTS Image_Paths(product_name TEXT PRIMARY KEY, path TEXT);')
@@ -456,15 +534,13 @@ def  populate_image_paths(filePath):
             product_name = row["product_name"].strip()
             path = row["path"].strip()
 
-            cursor.execute('INSERT OR IGNORE INTO Image_Paths(product_name, path) VALUES (?, ?);',(product_name, path))
+            cursor.execute('INSERT OR IGNORE INTO Image_Paths(product_name, path) VALUES (?, ?);', (product_name, path))
     connection.commit()
     connection.close()
 
 
-
-
 if __name__ == "__main__":
-    #print("this is hash of 'database' " + hashing("database")) -------testing print
+    # print("this is hash of 'database' " + hashing("database")) -------testing print
     populate_users(Users_csvPath)
     populate_addresses(Address_csvPath)
     populate_auction_listings(Auction_Listings_csvPath)
@@ -474,7 +550,7 @@ if __name__ == "__main__":
     populate_credit_cards(Credit_Cards_csvPath)
     populate_helpdesk(Helpdesk_csvPath)
 
-    #CALL SELLERS FIRST
+    # CALL SELLERS FIRST
     populate_sellers(Sellers_csvPath)
 
     populate_local_vendors(Local_Vendors_csvPath)
@@ -488,9 +564,6 @@ if __name__ == "__main__":
     image = pull_image("Logo")
 
     print(image)
-
-
-
 
     connection = sql.connect('database.db')
     app.run(debug=True)

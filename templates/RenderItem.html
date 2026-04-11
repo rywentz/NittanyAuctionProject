@@ -6,32 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
           integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-    <title>Catalog</title>
+    <title>ITEM NAME HERE</title>
 </head>
 
 <body style="background-color:AntiqueWhite">
-<h1 style="background-color:LightBlue; text-align: center; font-size: 50px; height:65px;" > Catalog </h1>
+<h1 style="background-color:LightBlue; text-align: center"> ITEM NAME HERE </h1>
 <h4 style = "text-align: center; background-color:Azure" >
 </h4>
 <br>
 <br>
 
 
-
-<!-- Below will be the code for the catalog-->
-<div id="catalog" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
-
-            {% for parent_category in categories %}
-                <tr>
-                    <td> {{ parent_category }} </td>
-
-                </tr>
-            {% endfor %}
-
-</div>
+<body style = "position: relative">
 
 
-<!-- Catalog code ends here-->
+<img src="{{ url_for('static', filename=path) }}" alt="steak rolls" loading="lazy" width="300" height="200">
+
+</body>
+
+
 
 </body>
 
