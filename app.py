@@ -133,11 +133,12 @@ def view_account():
             print('should be local vendor')
             seller = pull_lv(email)
             print(seller)
+            role = '{} (as Local Vendor)'.format(session.get('role'))
             address_id = seller[5]
             address = pull_business_address(address_id)
             return render_template('lvaccount.html', email=session.get('email'),
                                    acc_num=seller[1], route_num=seller[2], bal=seller[3],
-                                   role=session.get('role'), business=seller[4], csphone=seller[6],
+                                   role=role, business=seller[4], csphone=seller[6],
                                    address=address)
         else:   #user is just a seller, no business information needed
             email = session.get('email')
@@ -208,7 +209,6 @@ def pull_bank_info(email):
 
 
 # returns an address string based on the logged in user's email
-# TODO: confirm that pull_address works for all emails
 def pull_address(email):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
@@ -237,7 +237,6 @@ def pull_business_address(address_id):
 
 
 # returns card information array containing card information based on the logged-in user's email
-# TODO: confirm that no user has more than one card on file, if so, change so that cursor.fetchall() and iterate through
 def pull_credit_card(email):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
