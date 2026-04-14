@@ -113,27 +113,102 @@ def logout():
 @app.route('/account', methods=['POST', 'GET'])
 def view_account():
     ##pull account data from db
-    email = session.get('email')
-    user = pull_user(email)
-    address_info = pull_address(email)
-    return render_template('account.html', email=session.get('email'), fname=user[0], lname=user[1],
-                           role=session.get('role'),
-                           address=address_info)
+    #DEBUG:
+    print(session.get('role'))
 
+    if session.get('role') == 'Buyer':
+        email = session.get('email')
+        user = pull_user(email)
+        address_info = pull_address(email)
+        card_info = pull_credit_card(email)
+        expire_date = '{} / {}'.format(card_info[2], card_info[3])
+        return render_template('account.html', email=session.get('email'), fname=user[0], lname=user[1],
+                               role=session.get('role'), address=address_info, card_num=card_info[0], card_type=card_info[1],
+                               exp=expire_date, security_code=card_info[4])
+    elif session.get('role') == 'Seller':
+        email = session.get('email')
+        if check_lv_status(email): #true if lv, false if just seller
+            #DEBUG
+            print(email)
+            print('should be local vendor')
+            seller = pull_lv(email)
+            print(seller)
+            address_id = seller[5]
+            address = pull_business_address(address_id)
+            return render_template('lvaccount.html', email=session.get('email'),
+                                   acc_num=seller[1], route_num=seller[2], bal=seller[3],
+                                   role=session.get('role'), business=seller[4], csphone=seller[6],
+                                   address=address)
+        else:   #user is just a seller, no business information needed
+            email = session.get('email')
+            user = pull_user(email)
+            address_info = pull_address(email)
+            card_info = pull_credit_card(email)
+            expire_date = '{} / {}'.format(card_info[2], card_info[3])
+            bank = pull_bank_info(email)
+            return render_template('selleraccount.html', email=session.get('email'), fname=user[0], lname=user[1],
+                                   role=session.get('role'), address=address_info, card_num=card_info[0],
+                                   card_type=card_info[1],
+                                   acc_num=bank[0], route_num=bank[1], bal=bank[2],
+                                   exp=expire_date, security_code=card_info[4])
 
+    return render_template('account.html')
+
+# works only for users with .lsu emails (i think)
 def pull_user(email):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
 
-    cursor.execute('SELECT first_name, last_name FROM Users AS u, Bidders AS b, Sellers AS s, Helpdesk AS h '
-                   'WHERE u.email = ? AND (u.email = b.email OR u.email = s.email OR u.email = h.email)', (email,))
+    # cursor.execute('SELECT first_name, last_name FROM Users AS u, Bidders AS b, Sellers AS s, Helpdesk AS h '
+    #                'WHERE u.email = ? AND (u.email = b.email OR u.email = s.email OR u.email = h.email)', (email,))
+    cursor.execute('SELECT first_name, last_name FROM Users AS u, Bidders AS b WHERE u.email = ? AND (u.email = b.email)', (email,))
     user = cursor.fetchone()
     connection.close()
     return user
 
 
+def pull_lv(email):
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    cursor.execute('SELECT u.email, s.bank_account_number, s.bank_routing_number, s.balance, lv.business_name, lv.business_address_id, lv.customer_service_phone_number '
+                       'FROM Users AS u, Sellers AS s, Local_Vendors lv '
+                       'WHERE u.email = ? AND (u.email = s.email) AND (u.email = lv.email)', (email,))
+
+    lv=cursor.fetchone()
+    # DEBUG:
+    print(lv)
+    connection.close()
+    return lv
+
+
+def check_lv_status(email):
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+    cursor.execute('SELECT * FROM Users AS u, Local_Vendors AS lv WHERE u.email = ? AND (u.email = lv.email)', (email,))
+    temp = cursor.fetchone()
+    if temp == None:
+        connection.close()
+        return False
+    else:
+        connection.close()
+        return True
+
+
+def pull_bank_info(email):
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    cursor.execute('SELECT s.bank_account_number, s.bank_routing_number, s.balance '
+                   'FROM Users AS u, Sellers AS s '
+                   'WHERE u.email = ? AND (u.email = s.email)', (email,))
+    bank_info = cursor.fetchone()
+    connection.close()
+    return bank_info
+
+
 # returns an address string based on the logged in user's email
-# TODO: confirm that pull_address works for all emails - even local vendor emails (business emails)
+# TODO: confirm that pull_address works for all emails
 def pull_address(email):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
@@ -145,6 +220,22 @@ def pull_address(email):
     connection.close()
     return address
 
+
+def pull_business_address(address_id):
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    cursor.execute('SELECT A.street_num, A.street_name, Z.city, Z.state, A.zipcode '
+                   'FROM Address AS A, Zipcode_Info AS Z '
+                   'WHERE A.address_ID = ? AND A.zipcode = Z.zipcode', (address_id,))
+
+    address_info = cursor.fetchone()
+    address = "{} {} {} {} {}".format(address_info[0], address_info[1], address_info[2], address_info[3], address_info[4])
+    connection.close()
+    return address
+
+
+
 # returns card information array containing card information based on the logged-in user's email
 # TODO: confirm that no user has more than one card on file, if so, change so that cursor.fetchall() and iterate through
 def pull_credit_card(email):
@@ -154,7 +245,11 @@ def pull_credit_card(email):
     cursor.execute('SELECT C.credit_card_num, C.card_type, C.expire_month, C.expire_year, C.security_code FROM Credit_Cards C, Users U WHERE U.email = ? AND U.email = C.owner_email', (email,))
 
     card_info = cursor.fetchone()
+    connection.close()
     return card_info
+
+
+
 
 # returns the path of the image based on the image name (used when crossing tables)
 def pull_image(name):
