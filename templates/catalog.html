@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:margin="http://www.w3.org/1999/xhtml">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
           integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-    <title>Catalog</title>
+    <title>Catalogs</title>
 </head>
 
 <body style="background-color:AntiqueWhite">
@@ -16,15 +16,17 @@
 <br>
 <br>
 
-
+<h2 style="background-color:LightBlue; text-align: center; font-size: 50px; height:65px;" > Please click on a category below </h2>
 
 <!-- Below will be the code for the catalog-->
 <div id="catalog" style="margin-left: 0px; padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
 
     {% for parent_category in categories %}
 
-        <form action="/catalog/subcatalog" style="width:100%">
-            <button type="submit" class="btn btn-info" style=" width:100%; height:100%; background: midnightblue; color: white; border: 3px; border-radius: 10px; padding: 16px; text-align: center;">
+        <form action="/catalog/{{ parent_category }}" style="width:100%">
+            <button type="submit"  class="btn btn-info" style=" width:100%; height:100%; background: midnightblue; color: white; border: 3px; border-radius: 10px; padding: 16px; text-align: center";
+            onmouseover="this.style.background='white'; this.style.color='midnightblue'"  ; onmouseout="this.style.background='midnightblue'; this.style.color='white'";>
+
                 <h5 style="margin: 0;">{{ parent_category }}</h5>
             </button>
         </form>

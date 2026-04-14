@@ -170,22 +170,26 @@ def pull_image(name):
 
 
 @app.route('/catalog', methods=['POST', 'GET'])
-def catalog():
+def catalog(): #Only gives categories where its root aka the main categories
     connection = sql.connect('database.db')
     cursor = connection.cursor()
-    cursor.execute('SELECT DISTINCT parent_category FROM Categories')
+    cursor.execute('SELECT category_name FROM Categories WHERE parent_category = "Root"')
     categories = [row[0] for row in cursor.fetchall()]
     connection.close()
 
     return render_template('catalog.html', categories=categories)
 
-@app.route('/catalog/subcatalog', methods=['POST', 'GET'])
-def subcatalog():
+@app.route('/catalog/<category>', methods=['POST', 'GET'])
+def subcatalog(category):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
+    print(category)
+    #Gets the subcategories
+    cursor.execute('SELECT c.category_name FROM Categories AS C WHERE c.parent_category = ?', (category,))
+    items = [row[0] for row in cursor.fetchall()]
     connection.close()
 
-    return render_template('subcatalog.html',)
+    return render_template('subcatalog.html', category=category, items=items)
 
 # hashing algorithm that takes a word and hashes it to a SHA256 hash.
 def hashing(password):
