@@ -305,8 +305,10 @@ def subcatalog(category):
     cursor = connection.cursor()
     print(category)
     #Gets the subcategories
-    cursor.execute('SELECT c.category_name FROM Categories AS C WHERE c.parent_category = ?', (category,))
-    items = [row[0] for row in cursor.fetchall()]
+    cursor.execute('WITH RECURSIVE combined_categories AS (SELECT category_name, parent_category FROM Categories WHERE category_name = ? UNION ALL SELECT c.category_name, c.parent_category FROM Categories AS c JOIN combined_categories AS cc ON c.parent_category = cc.category_name) SELECT l.* FROM auction_listings AS l WHERE l.category IN (SELECT category_name FROM combined_categories)', (category,))
+    #items = [row[4] for row in cursor.fetchall()]
+    items = cursor.fetchall()
+    print(items)
     connection.close()
 
     return render_template('subcatalog.html', category=category, items=items)
