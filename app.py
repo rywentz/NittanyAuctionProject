@@ -44,6 +44,11 @@ def login():
 
         connection = sql.connect('database.db')
         connection.execute('CREATE TABLE IF NOT EXISTS Users(email TEXT PRIMARY KEY, password TEXT);')
+        if not check_in_system(email_user):
+            error = 'We do not have sufficient information to complete your request. Please contact the help desk or create a new account.'
+            connection.close()
+            return render_template('login.html', error=error)
+
         cursor = connection.cursor()
         cursor.execute('SELECT * FROM Users WHERE email = ?;', (email_user,))
         user = cursor.fetchone()
@@ -54,6 +59,7 @@ def login():
                 cursor.execute('SELECT * FROM Helpdesk WHERE email = ?;', (email_user,))
                 if cursor.fetchone():
                     session['role'] = 'HelpDesk'
+                    connection.close()
                     return render_template('welcome.html', role='HelpDesk', email=email_user)
             except sql.OperationalError:
                 pass
@@ -61,13 +67,17 @@ def login():
                 cursor.execute('SELECT * FROM Sellers WHERE email = ?;', (email_user,))
                 if cursor.fetchone():
                     session['role'] = 'Seller'
+                    connection.close()
                     return render_template('welcome.html', role='Seller', email=email_user)
             except sql.OperationalError:
                 pass
             session['role'] = 'Buyer'
+            connection.close()
             return render_template('welcome.html', role='Buyer', email=email_user)
         else:
+            connection.close()
             error = 'Incorrect password or email, try again.'
+
 
     return render_template('login.html', error=error)
 
@@ -207,6 +217,22 @@ def pull_bank_info(email):
     connection.close()
     return bank_info
 
+def check_in_system(email):
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    cursor.execute('SELECT email FROM Sellers WHERE email = ? '
+                   'UNION '
+                   'SELECT email FROM Bidders WHERE email = ? '
+                   'UNION '
+                   'SELECT email FROM Local_Vendors WHERE email = ? '
+                   'UNION '
+                   'SELECT email FROM Helpdesk WHERE email = ? ',
+                   (email, email, email, email))
+
+    temp = cursor.fetchone()
+    connection.close()
+    return temp is not None  # True if user email found in any of the three tables
 
 # returns an address string based on the logged in user's email
 def pull_address(email):
