@@ -28,6 +28,7 @@ Transactions_csvPath = 'NittanyAuctionDataset_v1/Transactions.csv'
 Users_csvPath = 'NittanyAuctionDataset_v1/Users.csv'
 Zipcode_Info_csvPath = 'NittanyAuctionDataset_v1/Zipcode_Info.csv'
 Image_Path_cvsPath = 'NittanyAuctionDataset_v1/Image_Paths.csv'
+Watchlist_csvPath = 'NittanyAuctionDataset_v1/Watchlist.csv'
 
 
 @app.route('/')
@@ -165,6 +166,13 @@ def view_account():
 
     return render_template('account.html')
 
+@app.route('/watchlist', methods=['GET'])
+def watchlist():
+    email = session.get('email')
+    watchlist = pull_watchlist(email)
+
+    return render_template('watchlist.html', watchlist=watchlist, email=email)
+
 # works only for users with .lsu emails (i think)
 def pull_user(email):
     connection = sql.connect('database.db')
@@ -283,7 +291,43 @@ def pull_image(name):
     cursor.execute('SELECT path FROM Image_Paths WHERE product_name = ?', (name,))
     path = cursor.fetchone()
     connection.close()
-    return path[0]
+    return path
+
+def pull_watchlist(email):
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    cursor.execute('SELECT A.seller_email, A.listing_id, A.category, A.auction_title, A.product_name, A.status, I.path '
+                   'FROM Auction_Listings A, Watchlist W, Image_Paths I '
+                   'WHERE W.seller_email = A.seller_email AND W.listing_id = A.listing_id AND A.product_name = I.product_name AND W.bidder_email = ?',
+                   (email,))
+
+    watchlist = cursor.fetchall()
+
+    connection.close()
+    return watchlist
+
+
+def add_to_watchlist(bidder_email, seller_email, listing_id):
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+    cursor.execute("PRAGMA foreign_keys = ON;")
+
+    cursor.execute('INSERT OR IGNORE INTO Watchlist (bidder_email, seller_email, listing_id) VALUES (?, ?, ?);',
+                   (bidder_email, seller_email, listing_id))
+
+    connection.commit()
+    connection.close()
+
+def delete_from_watchlist(bidder_email, seller_email, listing_id):
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    cursor.execute('DELETE FROM Watchlist WHERE bidder_email = ? AND seller_email = ? AND listing_id = ?',
+                   (bidder_email, seller_email, listing_id))
+
+    connection.commit()
+    connection.close()
 
 @app.route('/catalog/<category>/<name>/<id>', methods=['POST', 'GET'])
 def render_item(category, name, id):
@@ -591,6 +635,30 @@ def populate_requests(filePath):
     connection.commit()
     connection.close()
 
+def populate_watchlist(filePath):
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+    cursor.execute("PRAGMA foreign_keys = ON;")
+    cursor.execute(
+        'CREATE TABLE IF NOT EXISTS Watchlist(bidder_email TEXT NOT NULL, seller_email TEXT NOT NULL, listing_id INT NOT NULL,'
+        'PRIMARY KEY (bidder_email, seller_email, listing_id),'
+        'FOREIGN KEY (bidder_email) REFERENCES Bidders(email),'
+        'FOREIGN KEY (seller_email, listing_id) REFERENCES Auction_Listings(seller_email, listing_id));'
+    )
+
+    with open(filePath, 'r', encoding="utf-8-sig", newline="") as csvfile:
+        reader = csv.DictReader(csvfile)
+
+        for row in reader:
+            bidder_email = row["bidder_email"].strip()
+            seller_email = row["seller_email"].strip()
+            listing_id = int(row["listing_id"].strip())
+
+            cursor.execute('INSERT OR IGNORE INTO Watchlist (bidder_email, seller_email, listing_id) VALUES (?, ?, ?);',
+                           (bidder_email, seller_email, listing_id))
+
+    connection.commit()
+    connection.close()
 
 def populate_sellers(filePath):
     connection = sql.connect('database.db')
@@ -686,6 +754,7 @@ if __name__ == "__main__":
     populate_categories(Categories_csvPath)
     populate_credit_cards(Credit_Cards_csvPath)
     populate_helpdesk(Helpdesk_csvPath)
+    populate_watchlist(Watchlist_csvPath)
 
     # CALL SELLERS FIRST
     populate_sellers(Sellers_csvPath)
