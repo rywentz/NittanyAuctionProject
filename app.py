@@ -280,14 +280,32 @@ def pull_credit_card(email):
 def pull_image(name):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
-
     cursor.execute('SELECT path FROM Image_Paths WHERE product_name = ?', (name,))
-
     path = cursor.fetchone()
-
     connection.close()
     return path[0]
 
+@app.route('/catalog/<category>/<name>/<id>', methods=['POST', 'GET'])
+def render_item(category, name, id):
+    print(name)
+    img_src = pull_image(name)
+    print(img_src)
+    return render_template('RenderItem.html', name=name, category=category, id=id, img_src=img_src)
+
+@app.route('/catalog/<category>', methods=['POST', 'GET'])
+def subcatalog(category):
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    #Gets the subcategories
+    cursor.execute('WITH RECURSIVE combined_categories AS (SELECT category_name, parent_category FROM Categories WHERE category_name = ? UNION ALL SELECT c.category_name, c.parent_category FROM Categories AS c JOIN combined_categories AS cc ON c.parent_category = cc.category_name) SELECT l.*, i.path FROM auction_listings AS l JOIN Image_Paths AS i ON i.product_name = l.product_name WHERE l.status = 1 AND l.category IN (SELECT category_name FROM combined_categories)', (category,))
+    rows = cursor.fetchall()
+    product_name = [(row[4], row[1], row[10], row[0]) for row in rows]  # (listing_id, product_name)
+    print(product_name)
+    items = rows
+    connection.close()
+
+    return render_template('subcatalog.html', category=category, items=items, product_name=product_name)
 
 @app.route('/catalog', methods=['POST', 'GET'])
 def catalog(): #Only gives categories where its root aka the main categories
@@ -299,19 +317,7 @@ def catalog(): #Only gives categories where its root aka the main categories
 
     return render_template('catalog.html', categories=categories)
 
-@app.route('/catalog/<category>', methods=['POST', 'GET'])
-def subcatalog(category):
-    connection = sql.connect('database.db')
-    cursor = connection.cursor()
-    print(category)
-    #Gets the subcategories
-    cursor.execute('WITH RECURSIVE combined_categories AS (SELECT category_name, parent_category FROM Categories WHERE category_name = ? UNION ALL SELECT c.category_name, c.parent_category FROM Categories AS c JOIN combined_categories AS cc ON c.parent_category = cc.category_name) SELECT l.* FROM auction_listings AS l WHERE l.category IN (SELECT category_name FROM combined_categories)', (category,))
-    #items = [row[4] for row in cursor.fetchall()]
-    items = cursor.fetchall()
-    print(items)
-    connection.close()
 
-    return render_template('subcatalog.html', category=category, items=items)
 
 # hashing algorithm that takes a word and hashes it to a SHA256 hash.
 def hashing(password):
