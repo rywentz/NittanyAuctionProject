@@ -20,14 +20,44 @@
 <!--Below is the code for the blue box to the right -->
 <body style="position: relative;" >
 
-<div class="rounded-box" style="border-radius:15px; background-color: dodgerblue; position: absolute; left: 25px; top: 100px; width: 300px; height: 85%;">
+<!--<div class="rounded-box" style="border-radius:15px; background-color: dodgerblue; position: absolute; left: 25px; top: 100px; width: 300px; height: 85%;">-->
+<div class="col-md-3" style="box-shadow: 3px 3px; border-radius:15px; background-color: #add8e6; position: absolute; left: 25px; top: 100px; width: 300px; height: 90%;">
+    <form action="/catalog/{{ category }}">
+    {% for filter in filters %}
+    <div style="display: flex; align-items: center; flex-direction: row; gap: 8px; margin: 2px 0">
+        <label style="display: flex; align-items: center; margin-top: 20px; margin-left: 8px; font-size: 20px; font-weight: 200">
+            <input type="checkbox" name="filters" value="{{ filter }}" onchange="this.form.submit()">
+            <span style="margin-left: 8px;">{{ filter }}</span>
+        </label>
 
-
-<div style="display: flex; justify-content: center; align-items: center; flex-direction: column; margin-top: 20px; position:absolute; left: 110px; bottom: 10%;">
-    <form action="/catalog">
-        <button type="submit" class="btn btn-danger">Go Back</button>
+    </div>
+    {% endfor %}
     </form>
-</div>
+
+
+    <div style="display: flex; justify-content: center; align-items: center; flex-direction: column; margin-top: 20px; position:absolute; left: 110px; bottom: 10%;">
+        <form action="/catalog">
+            <button type="submit" class="btn btn-danger">Go Back</button>
+        </form>
+    </div>
+
+<form action="/catalog/{{ category }}" method="GET">
+  <div class="form-group">
+    <label for="user_item_lookup">Filter:</label>
+    <input
+      type="text"
+      class="form-control"
+      id="user_item_lookup"
+      name="user_item_lookup"
+      placeholder="Search For:"
+    >
+  </div>
+
+  <button id="confirm" type="submit" class="btn btn-success">
+    Search!
+  </button>
+</form>
+
 
 
 </div>

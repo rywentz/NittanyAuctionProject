@@ -337,28 +337,58 @@ def render_item(category, name, id):
 
     cursor.execute('SELECT * FROM Auction_Listings WHERE listing_id = ?', (id,))
     product = cursor.fetchone()
+    #DEBUG:
     print(product)
+
     cursor.execute('SELECT * FROM Stop_Times WHERE Listing_ID = ?', (id, ))
     stoptime = cursor.fetchone()
+    #DEBUG:
     print(stoptime)
 
     connection.close()
 
-    return render_template('RenderItem.html', name=name, category=category, id=id, img_src=img_src, product=product, stoptime=stoptime)
+    return render_template('RenderItem.html', name=name, category=category, id=id, img_src=img_src, product=product, stoptime=stoptime[1])
 
-@app.route('/catalog/<category>', methods=['POST', 'GET'])
+
+@app.route('/catalog/<category>/', methods=['POST', 'GET'])
 def subcatalog(category):
+    selected_filter = request.args.get('filters')
+    search_filter = request.args.get('user_item_lookup')
+
     connection = sql.connect('database.db')
     cursor = connection.cursor()
 
-    #Gets the subcategories
+    print(selected_filter)
+
+    #Gets the subcategories INCLUDING ROOT
     cursor.execute('WITH RECURSIVE combined_categories AS (SELECT category_name, parent_category FROM Categories WHERE category_name = ? UNION ALL SELECT c.category_name, c.parent_category FROM Categories AS c JOIN combined_categories AS cc ON c.parent_category = cc.category_name) SELECT l.*, i.path FROM auction_listings AS l JOIN Image_Paths AS i ON i.product_name = l.product_name WHERE l.status = 1 AND l.category IN (SELECT category_name FROM combined_categories)', (category,))
     rows = cursor.fetchall()
-    product_name = [(row[4], row[1], row[10], row[0], row[7]) for row in rows]  # (listing_id, product_name)
-    items = rows
-    connection.close()
+    product_name = [(row[4], row[1], row[10], row[0], row[7]) for row in rows]
+    # print(product_name)
 
-    return render_template('subcatalog.html', category=category, items=items, product_name=product_name, price=product_name[7])
+    #Gets ONLY children
+    cursor.execute('WITH RECURSIVE combined_categories AS (SELECT category_name, parent_category FROM Categories WHERE parent_category = ? UNION ALL SELECT c.category_name, c.parent_category FROM Categories AS c JOIN combined_categories AS cc ON c.parent_category = cc.category_name) SELECT DISTINCT l.category FROM auction_listings AS l JOIN Image_Paths AS i ON i.product_name = l.product_name WHERE l.status = 1 AND l.category IN (SELECT category_name FROM combined_categories)', (category,))
+    filter_list = cursor.fetchall()
+    filtered = [(filter[0]) for filter in filter_list]
+    print(filtered)
+
+
+    if selected_filter:
+        cursor.execute('WITH RECURSIVE combined_categories AS (SELECT category_name, parent_category FROM Categories WHERE category_name = ? UNION ALL SELECT c.category_name, c.parent_category FROM Categories AS c JOIN combined_categories AS cc ON c.parent_category = cc.category_name) SELECT l.*, i.path FROM auction_listings AS l JOIN Image_Paths AS i ON i.product_name = l.product_name WHERE l.status = 1 AND l.category IN (SELECT category_name FROM combined_categories)',(selected_filter,))
+        rows = cursor.fetchall()
+        product_name = [(row[4], row[1], row[10], row[0], row[7]) for row in rows]
+
+
+    if search_filter:
+        cursor.execute('WITH RECURSIVE combined_categories AS (SELECT category_name, parent_category FROM Categories WHERE category_name = ? UNION ALL SELECT c.category_name, c.parent_category FROM Categories AS c JOIN combined_categories AS cc ON c.parent_category = cc.category_name) SELECT l.*, i.path FROM auction_listings AS l JOIN Image_Paths AS i ON i.product_name = l.product_name WHERE l.status = 1 AND l.category IN (SELECT category_name FROM combined_categories) AND l.product_name LIKE ?',(category, f'%{search_filter}%',))
+        rows = cursor.fetchall()
+        product_name = [(row[4], row[1], row[10], row[0], row[7]) for row in rows]
+        print("FOR SEARCH BAR " + search_filter)
+
+
+
+    connection.close()
+    return render_template('subcatalog.html', category=category, product_name=product_name, filters=filtered)
 
 @app.route('/catalog', methods=['POST', 'GET'])
 def catalog(): #Only gives categories where its root aka the main categories
