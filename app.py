@@ -2,10 +2,14 @@
 # Original code credits to Penn State University CMPSC 431W Spring 2026 Semester
 
 import csv
+from optparse import Values
+
 from flask import Flask, render_template, request, session, sessions, redirect
 import sqlite3 as sql
 
 import hashlib
+from datetime import date
+import uuid
 
 app = Flask(__name__)
 app.secret_key = 'NITTANYAUCTION'
@@ -91,6 +95,23 @@ def createaccount():
     if request.method == 'POST':
         email_user = request.form["email"]
         password_user = request.form["password"]
+        first_name = request.form["firstname"]
+        last_name = request.form["lastname"]
+        dob = request.form["dob"]
+        major = request.form["major"]
+        street_number = request.form["streetnum"]
+        street_name = request.form["streetname"]
+        city = request.form["city"]
+        state = request.form["state"]
+        zipcode = request.form["zipcode"]
+
+        try:
+            age = calculate_age(dob)
+        except ValueError:
+            error = "Invalid Date."
+            return render_template('createaccount.html', error=error, success=success)
+
+        address_id = uuid.uuid4().hex
 
         connection = sql.connect('database.db')
         cursor = connection.cursor()
@@ -104,6 +125,9 @@ def createaccount():
         else:
             hashed_password = hashing(password_user)
             cursor.execute('INSERT INTO Users (email, password) VALUES (?, ?);', (email_user, hashed_password))
+            cursor.execute('INSERT OR IGNORE INTO Zipcode_Info (zipcode, city, state) VALUES (?, ?, ?)', (zipcode, city, state))
+            cursor.execute('INSERT INTO Address (address_ID, zipcode, street_num, street_name) VALUES (?, ?, ?, ?)', (address_id, zipcode, street_number, street_name))
+            cursor.execute('INSERT INTO Bidders (email, first_name, last_name, age, home_address_id, major) VALUES (?, ?, ?, ?, ?, ?)', (email_user, first_name, last_name, age, address_id, major))
             connection.commit()
             success = 'Account created successfully! You can now log in.'
 
@@ -132,12 +156,18 @@ def view_account():
         email = session.get('email')
         user = pull_user(email)
         address_info = pull_address(email)
-        card_info = pull_credit_card(email)
-        expire_date = '{} / {}'.format(card_info[2], card_info[3])
         profile_picture = pull_image("Profile Picture")
-        return render_template('account.html', email=session.get('email'), fname=user[0], lname=user[1],
-                               role=session.get('role'), address=address_info, card_num=card_info[0], card_type=card_info[1],
-                               exp=expire_date, security_code=card_info[4], picture=profile_picture)
+
+        card_info = pull_credit_card(email)
+        if card_info:
+            expire_date = '{} / {}'.format(card_info[2], card_info[3])
+            return render_template('account.html', email=session.get('email'), fname=user[0], lname=user[1],
+                                   role=session.get('role'), address=address_info, card_num=card_info[0], card_type=card_info[1],
+                                   exp=expire_date, security_code=card_info[4], picture=profile_picture)
+        else:
+            return render_template('account.html', email=session.get('email'), fname=user[0], lname=user[1],
+                                   role=session.get('role'), address=address_info, card_num=None,
+                                   card_type=None, exp=None, security_code=None, picture=profile_picture)
     elif session.get('role') == 'Seller':
         email = session.get('email')
         if check_lv_status(email): #true if lv, false if just seller
@@ -363,6 +393,20 @@ def get_average_rating(seller_email):
 
     connection.close()
     return average_rating
+
+def calculate_age(dob):
+    print(dob)
+    month, day, year = dob.split('-')
+    today = date.today()
+
+    print(month, day, year)
+    age = today.year - int(year)
+
+    # Adjust age if birthday hasn't occurred yet
+    if (today.month, today.day) < (int(month), int(day)):
+        age -= 1
+
+    return age
 
 @app.route('/catalog/<category>/<name>/<id>', methods=['POST', 'GET'])
 def render_item(category, name, id):
