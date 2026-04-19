@@ -13,10 +13,14 @@
 
 <h1 style="background-color:LightBlue; text-align: center"> Account Details </h1>
 
-<div style="display: flex; justify-content: center; align-items: center; flex-direction: column; margin-top: 20px;">
+<div style="display: flex; justify-content: center; align-items: center; flex-direction: column; margin-top:20px;">
     <form action="/welcome">
         <button type="submit" class="btn btn-info">Go Back</button>
     </form>
+</div>
+
+<div style="display:flex; align-items:center; justify-content:center; flex-direction:column; margin-top:20px;">
+    <img src="{{ url_for('static', filename=picture) }}" alt="{{ name }}" loading="lazy" style="width: 25%; height: 25%; object-fit: contain;">
 </div>
 
 <div class="container mt-4">
