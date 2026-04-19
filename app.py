@@ -351,11 +351,15 @@ def get_average_rating(seller_email):
 
     ratings = cursor.fetchall()
 
-    sum = 0
-    for rating in ratings:
-        sum += rating[0]
+    # If seller has no ratings yet, make them unrated
+    if len(ratings) == 0:
+        average_rating = "Unrated"
+    else:
+        sum = 0
+        for rating in ratings:
+            sum += rating[0]
 
-    average_rating = sum / len(ratings)
+        average_rating = sum / len(ratings)
 
     connection.close()
     return average_rating
