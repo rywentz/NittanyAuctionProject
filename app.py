@@ -2,7 +2,7 @@
 # Original code credits to Penn State University CMPSC 431W Spring 2026 Semester
 
 import csv
-from flask import Flask, render_template, request, session, sessions
+from flask import Flask, render_template, request, session, sessions, redirect
 import sqlite3 as sql
 
 import hashlib
@@ -134,9 +134,10 @@ def view_account():
         address_info = pull_address(email)
         card_info = pull_credit_card(email)
         expire_date = '{} / {}'.format(card_info[2], card_info[3])
+        profile_picture = pull_image("Profile Picture")
         return render_template('account.html', email=session.get('email'), fname=user[0], lname=user[1],
                                role=session.get('role'), address=address_info, card_num=card_info[0], card_type=card_info[1],
-                               exp=expire_date, security_code=card_info[4])
+                               exp=expire_date, security_code=card_info[4], picture=profile_picture)
     elif session.get('role') == 'Seller':
         email = session.get('email')
         if check_lv_status(email): #true if lv, false if just seller
@@ -148,10 +149,12 @@ def view_account():
             role = '{} (as Local Vendor)'.format(session.get('role'))
             address_id = seller[5]
             address = pull_business_address(address_id)
+            profile_picture = pull_image("Profile Picture")
+            average_rating = get_average_rating(email)
             return render_template('lvaccount.html', email=session.get('email'),
                                    acc_num=seller[1], route_num=seller[2], bal=seller[3],
                                    role=role, business=seller[4], csphone=seller[6],
-                                   address=address)
+                                   address=address, picture=profile_picture, rating=average_rating)
         else:   #user is just a seller, no business information needed
             email = session.get('email')
             user = pull_user(email)
@@ -159,11 +162,13 @@ def view_account():
             card_info = pull_credit_card(email)
             expire_date = '{} / {}'.format(card_info[2], card_info[3])
             bank = pull_bank_info(email)
+            profile_picture = pull_image("Profile Picture")
+            average_rating = get_average_rating(email)
             return render_template('selleraccount.html', email=session.get('email'), fname=user[0], lname=user[1],
                                    role=session.get('role'), address=address_info, card_num=card_info[0],
                                    card_type=card_info[1],
                                    acc_num=bank[0], route_num=bank[1], bal=bank[2],
-                                   exp=expire_date, security_code=card_info[4])
+                                   exp=expire_date, security_code=card_info[4], picture=profile_picture, rating=average_rating)
 
     return render_template('account.html')
 
@@ -173,6 +178,16 @@ def watchlist():
     watchlist = pull_watchlist(email)
 
     return render_template('watchlist.html', watchlist=watchlist, email=email)
+
+@app.route('/remove_watchlist', methods=['POST'])
+def remove_watchlist():
+    bidder_email = session.get('email')
+    seller_email = request.form['seller_email']
+    listing_id = request.form['listing_id']
+
+    delete_from_watchlist(bidder_email, seller_email, listing_id)
+
+    return redirect('/watchlist')
 
 # works only for users with .lsu emails (i think)
 def pull_user(email):
@@ -327,6 +342,27 @@ def delete_from_watchlist(bidder_email, seller_email, listing_id):
 
     connection.commit()
     connection.close()
+
+def get_average_rating(seller_email):
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    cursor.execute('SELECT R.rating FROM Rating R WHERE seller_email = ?', (seller_email,))
+
+    ratings = cursor.fetchall()
+
+    # If seller has no ratings yet, make them unrated
+    if len(ratings) == 0:
+        average_rating = "Unrated"
+    else:
+        sum = 0
+        for rating in ratings:
+            sum += rating[0]
+
+        average_rating = sum / len(ratings)
+
+    connection.close()
+    return average_rating
 
 @app.route('/catalog/<category>/<name>/<id>', methods=['POST', 'GET'])
 def render_item(category, name, id):

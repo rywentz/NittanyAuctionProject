@@ -30,6 +30,12 @@
                 <p><b>Listing #</b>{{ item[1] }}</p>
                 <p><b>Category:</b> {{ item[2] }}</p>
                 <p><b>Seller Email:</b> {{ item[0] }}</p>
+
+                <form action="/remove_watchlist" method="POST">
+                    <input type="hidden" name="seller_email" value="{{ item[0] }}">
+                    <input type="hidden" name="listing_id" value="{{ item[1] }}">
+                    <button type="submit" class="btn btn-danger">Remove from Watchlist</button>
+                </form>
             </div>
         </div>
         {% endfor %}

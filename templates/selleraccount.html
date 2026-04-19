@@ -19,6 +19,10 @@
     </form>
 </div>
 
+<div style="display:flex; align-items:center; justify-content:center; flex-direction:column; margin-top:20px;">
+    <img src="{{ url_for('static', filename=picture) }}" alt="{{ name }}" loading="lazy" style="width: 25%; height: 25%; object-fit: contain;">
+</div>
+
 <div class="container mt-4">
     <div class="card">
         <div class="card-body">
@@ -29,6 +33,7 @@
             <p><b>Last Name:</b> {{ lname }}</p>
             <p><b>Role (Buyer, Seller, HelpDesk):</b> {{ role }}</p>
             <p><b>Address:</b> {{ address }}</p>
+            <p><b>Seller Rating:</b> {{ rating }}/5</p>
 
         </div>
     </div>
