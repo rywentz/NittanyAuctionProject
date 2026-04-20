@@ -480,6 +480,52 @@ def catalog(): #Only gives categories where its root aka the main categories
     return render_template('catalog.html', categories=categories)
 
 
+@app.route('/helpdesk')
+def helpdesk_panel():
+    if session.get('role') != 'HelpDesk':
+        return redirect('/login')
+
+    email = session.get('email')
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    # Requests still sitting in the team inbox
+    cursor.execute('SELECT * FROM Requests WHERE helpdesk_staff_email = "helpdeskteam@lsu.edu" AND request_status = 0 ORDER BY request_id')
+    unassigned = cursor.fetchall()
+
+    # Requests claimed by this logged-in helpdesk user
+    cursor.execute('SELECT * FROM Requests WHERE helpdesk_staff_email = ? AND request_status = 0 ORDER BY request_id', (email,))
+    my_requests = cursor.fetchall()
+
+    # Requests completed by this helpdesk user
+    cursor.execute('SELECT * FROM Requests WHERE helpdesk_staff_email = ? AND request_status = 1 ORDER BY request_id DESC', (email,))
+    completed = cursor.fetchall()
+
+    connection.close()
+
+    return render_template(
+        'helpdesk.html',
+        email=email,
+        unassigned=unassigned,
+        my_requests=my_requests,
+        completed=completed
+    )
+
+@app.route('/claim_request/<int:request_id>', methods=['POST'])
+def claim_request(request_id):
+    if session.get('role') != 'HelpDesk':
+        return redirect('/login')
+
+    email = session.get('email')
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    cursor.execute('UPDATE Requests SET helpdesk_staff_email = ? WHERE request_id = ? AND helpdesk_staff_email = "helpdeskteam@lsu.edu" AND request_status = 0', (email, request_id))
+
+    connection.commit()
+    connection.close()
+
+    return redirect('/helpdesk')
 
 # hashing algorithm that takes a word and hashes it to a SHA256 hash.
 def hashing(password):
@@ -860,7 +906,7 @@ def populate_image_paths(filePath):
             cursor.execute('INSERT OR IGNORE INTO Image_Paths(product_name, path) VALUES (?, ?);', (product_name, path))
     connection.commit()
     connection.close()
-    
+
 def populate_stop_times(filePath):
     connection = sql.connect('database.db')
     cursor = connection.cursor()

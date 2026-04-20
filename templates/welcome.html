@@ -20,9 +20,19 @@
     <form action="/account" method="GET">
         <button type="submit" class="btn btn-info">Account Information</button>
     </form>
+
+    {% if role != 'HelpDesk' %}
     <form action="/watchlist" method="GET">
         <button style="background-color: darkgreen;" type="submit" class="btn btn-info">View Watchlist</button>
     </form>
+    {% endif %}
+
+    {% if role == 'HelpDesk' %}
+    <form action="/helpdesk" method="GET">
+        <button style="background-color: darkblue;" type="submit" class="btn btn-info">HelpDesk Panel</button>
+    </form>
+    {% endif %}
+
     <form action="/login">
         <button type="submit" class="btn btn-danger">Logout</button>
     </form>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <title>HelpDesk Panel</title>
+</head>
+
+<body style="background-color:AntiqueWhite">
+
+<h1 style="background-color:LightBlue; text-align: center"> HelpDesk Panel </h1>
+<h4 style="text-align: center; background-color:Azure">
+    Logged in as: {{ email }} (HelpDesk)
+</h4>
+
+<div style="display: flex; justify-content: center; align-items: center; flex-direction: column; margin-top: 20px;">
+    <form action="/welcome">
+        <button type="submit" class="btn btn-info">Go Back</button>
+    </form>
+</div>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Unassigned Requests</h5>
+            <hr>
+
+            {% if unassigned %}
+            <table class="table table-striped">
+                <tr>
+                    <th>Request ID</th>
+                    <th>Sender Email</th>
+                    <th>Assigned To</th>
+                    <th>Request Type</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+                <tbody>
+                {% for req in unassigned %}
+                    <tr>
+                        <td>{{ req[0] }}</td>
+                        <td>{{ req[1] }}</td>
+                        <td>{{ req[2] }}</td>
+                        <td>{{ req[3] }}</td>
+                        <td>{{ req[4] }}</td>
+                        <td>
+                            {% if req[5] == 0 %}
+                                Incomplete
+                            {% else %}
+                                Completed
+                            {% endif %}
+                        </td>
+                    <td>
+                        <form action="/claim_request/{{ req[0] }}" method="POST">
+                            <button type="submit" class="btn btn-success btn-sm">Claim</button>
+                        </form>
+                    </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No unassigned requests.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">My Assigned Requests</h5>
+            <hr>
+
+            {% if my_requests %}
+            <table class="table table-striped">
+                <tr>
+                    <th>Request ID</th>
+                    <th>Sender Email</th>
+                    <th>Assigned To</th>
+                    <th>Request Type</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+                <tbody>
+                {% for req in my_requests %}
+                    <tr>
+                        <td>{{ req[0] }}</td>
+                        <td>{{ req[1] }}</td>
+                        <td>{{ req[2] }}</td>
+                        <td>{{ req[3] }}</td>
+                        <td>{{ req[4] }}</td>
+                        <td>
+                            {% if req[5] == 0 %}
+                                Incomplete
+                            {% else %}
+                                Completed
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form action="/complete_request/{{ req[0] }}" method="POST">
+                                <button type="submit" class="btn btn-success btn-sm">Complete</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No requests currently assigned to you.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Completed Requests</h5>
+            <hr>
+
+            {% if completed %}
+            <table class="table table-striped">
+                <tr>
+                    <th>Request ID</th>
+                    <th>Sender Email</th>
+                    <th>Assigned To</th>
+                    <th>Request Type</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                </tr>
+                <tbody>
+                {% for req in completed %}
+                    <tr>
+                        <td>{{ req[0] }}</td>
+                        <td>{{ req[1] }}</td>
+                        <td>{{ req[2] }}</td>
+                        <td>{{ req[3] }}</td>
+                        <td>{{ req[4] }}</td>
+                        <td>
+                            {% if req[5] == 0 %}
+                                Incomplete
+                            {% else %}
+                                Completed
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No completed requests yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
