@@ -50,11 +50,34 @@
 <br>
 <br>
 
-<div style="display: flex; justify-content: center; align-items: center; height:50vh; margin:0">
+<div style="display: flex; justify-content: center; align-items: center; height:50vh; margin:0; gap: 10px">
+
     <form action="/catalog">
         <button style="font-size: 24px; background-color: darkblue; text-decoration-color: aliceblue;" type="submit" class="btn btn-success">Catalog</button>
     </form>
+
+    {% if role == 'Seller' or role == 'HelpDesk' %}
+        <form action="/listitem" method="GET">
+            <button style="font-size: 24px; background-color: #258b00; color: white;" type="submit" class="btn">List an Item</button>
+        </form>
+    {% endif %}
+
+    {% if role != 'Seller' and role != 'HelpDesk' %}
+        <form onsubmit="return showSellerPopup(event);">
+            <button style="font-size: 24px; background-color: #9e9e9e; color: white;" type="submit" class="btn">List an Item</button>
+        </form>
+    {% endif %}
+
 </div>
+
+{# Popup functionality for if the user is not a seller and tries to list an item #}
+<script>
+    function showSellerPopup(event) {
+        event.preventDefault();
+        alert("You must be a seller to list an item. Please contact the HelpDesk through the Account page.");
+        return false;
+    }
+</script>
 
 </body>
 
