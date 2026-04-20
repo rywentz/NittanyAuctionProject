@@ -8,12 +8,21 @@
     <title>NittanyAuction - Create Account</title>
 </head>
 
-<body style="background-color:AntiqueWhite">
+<body style="background-color:AntiqueWhite; min-height:100vh;">
 
-<h1 style="background-color:LightBlue; text-align: center">Create an Account</h1>
+<div style="background:white; padding:20px; box-shadow:0 2px 8px black; display:flex; align-items:center; justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:8px;">
+        <h3>Nittany Auction</h3>
+
+        <img src="{{ url_for('static', filename='NittanyAuction_Logo.webp') }}"
+             alt="Nittany Auction Logo"
+             loading="lazy"
+             style="height:40px;">
+    </div>
+</div>
 
 <div style="display: flex; justify-content: center; align-items: center; flex-direction: column; margin-top: 20px;">
-  <form action="/createaccount" method="POST">
+  <form action="/createaccount" method="POST" style="margin-bottom:80px">
     <div class="form-group">
       <label for="firstname">First Name:</label>
       <input type="firstname" class="form-control" id="firstname" name="firstname" required>

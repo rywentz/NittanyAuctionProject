@@ -9,14 +9,27 @@
     <title>Catalogs</title>
 </head>
 
-<body style="background-color:AntiqueWhite">
-<h1 style="background-color:LightBlue; text-align: center; font-size: 50px; height:65px;" > Catalog </h1>
-<h4 style = "text-align: center; background-color:Azure" >
-</h4>
-<br>
-<br>
+<body style="background-color:AntiqueWhite; min-height:100vh;">
+{#<h1 style="background-color:LightBlue; text-align: center; font-size: 50px; height:65px;" > Catalog </h1>#}
+{#<h4 style = "text-align: center; background-color:Azure" >#}
+{#</h4>#}
 
-<h2 style="background-color:LightBlue; text-align: center; font-size: 50px; height:65px;" > Please click on a category below </h2>
+<div style="background:white; padding:20px; box-shadow:0 2px 8px black; display:flex; align-items:center; justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:8px;">
+        <h3>Nittany Auction</h3>
+
+        <img src="{{ url_for('static', filename='NittanyAuction_Logo.webp') }}"
+             alt="Nittany Auction Logo"
+             loading="lazy"
+             style="height:40px;">
+    </div>
+    <div>
+        <b>Welcome to the main catalog! Please feel free to browse by choosing a main category.</b>
+    </div>
+</div>
+
+<br>
+<br>
 
 <!-- Below will be the code for the catalog-->
 <div id="catalog" style="margin-left: 0px; padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
