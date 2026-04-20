@@ -119,9 +119,15 @@
                             {% endif %}
                         </td>
                         <td>
-                            <form action="/complete_request/{{ req[0] }}" method="POST">
-                                <button type="submit" class="btn btn-success btn-sm">Complete</button>
-                            </form>
+                            {% if req[3] == 'AddCategory' %}
+                                <form action="/approve_category_request/{{ req[0] }}" method="POST">
+                                    <button type="submit" class="btn btn-primary btn-sm">Approve Category</button>
+                                </form>
+                            {% else %}
+                                <form action="/complete_request/{{ req[0] }}" method="POST">
+                                    <button type="submit" class="btn btn-success btn-sm">Complete</button>
+                                </form>
+                            {% endif %}
                         </td>
                     </tr>
                 {% endfor %}

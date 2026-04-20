@@ -527,6 +527,85 @@ def claim_request(request_id):
 
     return redirect('/helpdesk')
 
+# Helper to extract new category and parent category from AddCategory request text
+def parse_add_category_desc(request_desc):
+    prefix = 'Please ad a new category '
+    middle = ' under '
+
+    if not request_desc.startswith(prefix):
+        return None, None
+
+    remaining = request_desc[len(prefix):]
+
+    if middle not in remaining:
+        return None, None
+
+    parts = remaining.split(middle, 1)
+    new_category = parts[0].strip()
+    parent_category = parts[1].strip()
+
+    return new_category, parent_category
+
+@app.route('/complete_request/<int:request_id>', methods=['POST'])
+def complete_request(request_id):
+    if session.get('role') != 'HelpDesk':
+        return redirect('/login')
+
+    email = session.get('email')
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    # Mark only this helpdesk user's active request as completed
+    cursor.execute('UPDATE Requests SET request_status = 1 WHERE request_id = ? AND helpdesk_staff_email = ? AND request_status = 0', (request_id, email))
+
+    connection.commit()
+    connection.close()
+
+    return redirect('/helpdesk')
+
+@app.route('/approve_category_request/<int:request_id>', methods=['POST'])
+def approve_category_request(request_id):
+    if session.get('role') != 'HelpDesk':
+        return redirect('/login')
+
+    email = session.get('email')
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    # Get this assigned AddCategory request
+    cursor.execute('SELECT * FROM Requests WHERE request_id = ? AND helpdesk_staff_email = ? AND request_status = 0', (request_id, email))
+    req = cursor.fetchone()
+
+    if req is None:
+        connection.close()
+        return redirect('/helpdesk')
+
+    request_type = req[3]
+    request_desc = req[4]
+
+    # Only process AddCategory requests here
+    if request_type != 'AddCategory':
+        connection.close()
+        return redirect('/helpdesk')
+
+    # Read category info from the request description
+    new_category, parent_category = parse_add_category_desc(request_desc)
+
+    if new_category is None or parent_category is None:
+        connection.close()
+        return redirect('/helpdesk')
+
+    # Add the new category if it does not already exist
+    cursor.execute('INSERT OR IGNORE INTO Categories(category_name, parent_category) VALUES (?, ?);', (new_category, parent_category))
+
+    # Mark the request as completed after processing
+    cursor.execute('UPDATE Requests SET request_status = 1 WHERE request_id = ?', (request_id,))
+
+    connection.commit()
+    connection.close()
+
+    return redirect('/helpdesk')
+
 # hashing algorithm that takes a word and hashes it to a SHA256 hash.
 def hashing(password):
     sha256 = hashlib.sha256()
