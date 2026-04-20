@@ -9,33 +9,36 @@
     <title>Nittany Auction</title>
 </head>
 
-<body style="background-color:AntiqueWhite">
-<h1 style="background-color:LightBlue; text-align: center"> Welcome! </h1>
-<h4 style = "text-align: center; background-color:Azure" >
-    Logged in as: {{ email }} ({{ role }})
+<body style="background-color:AntiqueWhite; min-height:100vh;">
 
-</h4>
+<div style="background:white; padding:40px; box-shadow:0 2px 8px black; display:flex; align-items:center; justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:8px;">
+        <h3>Nittany Auction</h3>
 
-<div style="display: flex; justify-content: space-between; align-items: center; padding: 0 200px;">
-    <form action="/account" method="GET">
-        <button type="submit" class="btn btn-info">Account Information</button>
-    </form>
-    <form action="/watchlist" method="GET">
-        <button style="background-color: darkgreen;" type="submit" class="btn btn-info">View Watchlist</button>
-    </form>
-    <form action="/login">
-        <button type="submit" class="btn btn-danger">Logout</button>
-    </form>
+        <img src="{{ url_for('static', filename='NittanyAuction_Logo.webp') }}"
+             alt="Nittany Auction Logo"
+             loading="lazy"
+             style="height:40px;">
+    </div>
+
+    <div style="display:flex; align-items:center; gap:10px;">
+        <span style="margin-right:10px; color:gray;">
+            {{ email }} ({{ role }})
+        </span>
+        <form action="/account" method="GET">
+            <button class="btn btn-outline-info btn-sm">Account</button>
+        </form>
+        <form action="/watchlist" method="GET">
+            <button class="btn btn-outline-success btn-sm">Watchlist</button>
+        </form>
+        <form action="/login" method="GET">
+            <button class="btn btn-outline-danger btn-sm">Logout</button>
+        </form>
+    </div>
 </div>
 
 <br>
 <br>
-
-<div style="display:flex">
-<img src="{{ url_for('static', filename='NittanyAuction_Logo.webp') }}" alt="Nittany Auction Logo" loading="lazy" style="position: absolute;">
-
-
-</div>
 
 <div style="display: flex; justify-content: center; align-items: center; height:50vh; margin:0">
     <form action="/catalog">
