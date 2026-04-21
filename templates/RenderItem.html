@@ -62,7 +62,17 @@
 
 </body>
 
-<div style="display: flex; justify-content: center; align-items: center; flex-direction: column; margin-top: 20px; position: absolute; left: 50%; bottom: 10%;">
+<div style="display: flex; justify-content: center; align-items: center; flex-direction: column; margin-top: 20px; gap: 10px; position: absolute; left: 50%; bottom: 10%;">
+    {% if in_watchlist %}
+        <button class="btn btn-success" disabled>✓ Added to Watchlist</button>
+    {% else %}
+        <form action="/add_watchlist" method="POST">
+            <input type="hidden" name="seller_email" value="{{ product[0] }}">
+            <input type="hidden" name="listing_id" value="{{ id }}">
+            <button type="submit" class="btn btn-success">Add to Watchlist</button>
+        </form>
+    {% endif %}
+
     <form action="/catalog/{{ category }}">
         <button type="submit" class="btn btn-info">Go Back</button>
     </form>

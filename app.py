@@ -218,6 +218,16 @@ def remove_watchlist():
 
     return redirect('/watchlist')
 
+@app.route('/add_watchlist', methods=['POST'])
+def add_watchlist():
+    bidder_email = session.get('email')
+    seller_email = request.form['seller_email']
+    listing_id = request.form['listing_id']
+
+    add_to_watchlist(bidder_email, seller_email, listing_id)
+
+    return redirect(request.referrer)
+
 # works only for users with .lsu emails (i think)
 def pull_user(email):
     connection = sql.connect('database.db')
@@ -372,6 +382,21 @@ def delete_from_watchlist(bidder_email, seller_email, listing_id):
     connection.commit()
     connection.close()
 
+def is_in_watchlist(bidder_email, seller_email, listing_id):
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    cursor.execute('SELECT 1 FROM Watchlist WHERE bidder_email = ? AND seller_email = ? AND listing_id = ?',
+                   (bidder_email, seller_email, listing_id))
+
+    result = cursor.fetchone()
+    connection.close()
+
+    if result:
+        return True
+    else:
+        return False
+
 def get_average_rating(seller_email):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
@@ -394,11 +419,9 @@ def get_average_rating(seller_email):
     return average_rating
 
 def calculate_age(dob):
-    print(dob)
     month, day, year = dob.split('-')
     today = date.today()
 
-    print(month, day, year)
     age = today.year - int(year)
 
     # Adjust age if birthday hasn't occurred yet
@@ -466,6 +489,7 @@ def get_subcategories():
 @app.route('/catalog/<category>/<name>/<id>', methods=['POST', 'GET'])
 def render_item(category, name, id):
     img_src = pull_image(name)
+    bidder_email = session.get('email')
 
     connection = sql.connect('database.db')
     cursor = connection.cursor()
@@ -480,9 +504,11 @@ def render_item(category, name, id):
     #DEBUG:
     print(stoptime)
 
+    in_watchlist = is_in_watchlist(bidder_email, product[0], id)
+
     connection.close()
 
-    return render_template('RenderItem.html', name=name, category=category, id=id, img_src=img_src, product=product, stoptime=stoptime[1])
+    return render_template('RenderItem.html', name=name, category=category, id=id, img_src=img_src, product=product, stoptime=stoptime[1], in_watchlist=in_watchlist)
 
 
 @app.route('/catalog/<category>/', methods=['POST', 'GET'])
