@@ -508,10 +508,101 @@ def render_item(category, name, id):
 
     rating = get_average_rating(product[0])
 
+    cursor.execute('SELECT MAX(bid_price) FROM Bids WHERE listing_id = ? AND seller_email = ?', (id, product[0]))
+
+    highest_bid_row = cursor.fetchone()
+
+    if highest_bid_row[0] is None:
+        highest_bid = 0
+    else:
+        highest_bid = highest_bid_row[0]
+
+    cursor.execute('SELECT COUNT(*) FROM Bids WHERE listing_id = ? AND seller_email = ?', (id, product[0]))
+    bid_count = cursor.fetchone()[0]
+
+    remaining_bids = product[8] - bid_count
+
     connection.close()
 
-    return render_template('RenderItem.html', name=name, category=category, id=id, img_src=img_src, product=product, stoptime=stoptime[1], in_watchlist=in_watchlist, rating=rating)
+    return render_template('RenderItem.html', name=name, category=category, id=id, img_src=img_src, product=product, stoptime=stoptime[1], in_watchlist=in_watchlist, rating=rating, highest_bid=highest_bid, bid_count=bid_count, remaining_bids=remaining_bids)
 
+
+@app.route('/place_bid', methods=['POST'])
+def place_bid():
+    if session.get('role') != 'Buyer':
+        return redirect('/login')
+
+    bidder_email = session.get('email')
+    seller_email = request.form['seller_email']
+    listing_id = request.form['listing_id']
+    category = request.form['category']
+    name = request.form['name']
+
+    try:
+        bid_amount = int(request.form['bid_amount'])
+    except ValueError:
+        return redirect(f'/catalog/{category}/{name}/{listing_id}')
+
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    cursor.execute('SELECT * FROM Auction_Listings WHERE seller_email = ? AND listing_id = ?',
+                   (seller_email, listing_id))
+    listing = cursor.fetchone()
+
+    if listing is None:
+        connection.close()
+        return redirect('/catalog')
+
+    max_bids = listing[8]
+
+    cursor.execute('SELECT COUNT(*) FROM Bids WHERE seller_email = ? AND listing_id = ?',
+                   (seller_email, listing_id))
+    bid_count = cursor.fetchone()[0]
+
+    # Auction ends when max_bids is reached
+    if bid_count >= max_bids:
+        connection.close()
+        return redirect(f'/catalog/{category}/{name}/{listing_id}')
+
+    cursor.execute('SELECT MAX(bid_price) FROM Bids WHERE seller_email = ? AND listing_id = ?',
+                   (seller_email, listing_id))
+    highest_bid_row = cursor.fetchone()
+
+    if highest_bid_row[0] is None:
+        highest_bid = 0
+    else:
+        highest_bid = highest_bid_row[0]
+
+    # New bid must be at least $1 higher than current highest bid
+    if bid_amount < highest_bid + 1:
+        connection.close()
+        return redirect(f'/catalog/{category}/{name}/{listing_id}')
+
+    cursor.execute('SELECT bidder_email FROM Bids WHERE seller_email = ? AND listing_id = ? ORDER BY bid_id DESC LIMIT 1',
+                   (seller_email, listing_id))
+    last_bidder = cursor.fetchone()
+
+    # Bidder cannot place consecutive bids
+    if last_bidder is not None and last_bidder[0] == bidder_email:
+        connection.close()
+        return redirect(f'/catalog/{category}/{name}/{listing_id}')
+
+    cursor.execute('SELECT MAX(bid_id) FROM Bids')
+    max_bid_id = cursor.fetchone()[0]
+
+    if max_bid_id is None:
+        new_bid_id = 1
+    else:
+        new_bid_id = max_bid_id + 1
+
+    cursor.execute('INSERT INTO Bids(bid_id, seller_email, listing_id, bidder_email, bid_price) VALUES (?, ?, ?, ?, ?)',
+                   (new_bid_id, seller_email, listing_id, bidder_email, bid_amount))
+
+    connection.commit()
+    connection.close()
+
+    return redirect(f'/catalog/{category}/{name}/{listing_id}')
 
 @app.route('/catalog/<category>/', methods=['POST', 'GET'])
 def subcatalog(category):
