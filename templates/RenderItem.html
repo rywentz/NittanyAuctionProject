@@ -40,6 +40,20 @@
         <hr>
         <div style="font-size:18px; color:black; margin-top:12px; font-weight:500;">Seller: {{ product[0] }}</div>
 
+        <div style="font-size:18px; margin-top:12px; font-weight:500;">
+            <span style="color:black;">Seller Rating:</span>
+
+            {% if rating == "Unrated" %}
+                <span class="text-muted"> {{ rating }}</span>
+            {% elif rating >= 4 %}
+                <span class="text-success"> {{ rating }}</span>
+            {% elif rating >= 2 %}
+                <span class="text-warning"> {{ rating }}</span>
+            {% else %}
+                <span class="text-danger"> {{ rating }}</span>
+            {% endif %}
+        </div>
+
         <div style="font-size:18px; color:black; margin-top:22px; font-weight:10;">Seller's Description: {{ product[5] }}</div>
         <hr>
         <div style="font-size:46px; color:black; right:50%; margin-top:32px; font-weight:400;">US {{ product[7] }}</div>

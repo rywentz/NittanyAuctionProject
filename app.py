@@ -506,9 +506,11 @@ def render_item(category, name, id):
 
     in_watchlist = is_in_watchlist(bidder_email, product[0], id)
 
+    rating = get_average_rating(product[0])
+
     connection.close()
 
-    return render_template('RenderItem.html', name=name, category=category, id=id, img_src=img_src, product=product, stoptime=stoptime[1], in_watchlist=in_watchlist)
+    return render_template('RenderItem.html', name=name, category=category, id=id, img_src=img_src, product=product, stoptime=stoptime[1], in_watchlist=in_watchlist, rating=rating)
 
 
 @app.route('/catalog/<category>/', methods=['POST', 'GET'])
@@ -549,8 +551,6 @@ def subcatalog(category):
         rows = cursor.fetchall()
         product_name = [(row[4], row[1], row[10], row[0], row[7]) for row in rows]
         print("FOR SEARCH BAR " + search_filter)
-
-
 
     connection.close()
     return render_template('subcatalog.html', category=category, product_name=product_name, filters=filtered)
