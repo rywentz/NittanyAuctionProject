@@ -25,9 +25,12 @@
         <span style="margin-right:10px; color:gray;">
             {{ email }} ({{ role }})
         </span>
+
+        {% if role == 'Seller' or role == 'Buyer'  %}
         <form action="/account" method="GET">
             <button class="btn btn-outline-info btn-sm">Account</button>
         </form>
+        {% endif %}
 
         {% if role != 'HelpDesk' %}
         <form action="/watchlist" method="GET">
