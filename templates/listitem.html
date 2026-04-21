@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:margin="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <title>List Item</title>
+</head>
+
+<body style="background-color:AntiqueWhite; min-height:100vh;">
+
+<div style="background:white; padding:20px; box-shadow:0 2px 8px black; display:flex; align-items:center; justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:8px;">
+        <h3>Nittany Auction</h3>
+
+        <img src="{{ url_for('static', filename='NittanyAuction_Logo.webp') }}"
+             alt="Nittany Auction Logo"
+             loading="lazy"
+             style="height:40px;">
+    <div>
+    <form action="/welcome/?">
+        <button type="submit" class="btn btn-info">Home</button>
+    </form>
+    </div>
+</div>
+    <div>
+        <b>Please full out the information below to list an item.</b>
+    </div>
+</div>
+<br>
+<br>
+
+<!--status-->
+
+<div style="display: flex; justify-content: center; align-items: center; flex-direction: column; margin-top: 20px;">
+  <form action="/listitemsuccess" method="POST" style="margin-bottom:80px">
+
+    <!--    dropdown for category selection (parent)    -->
+    <div class="form-group">
+      <label for="parent_category">Category:</label>
+      <select name="parent_category" id ="parent_category">
+          <option value="" disabled selected hidden>Choose an option</option>
+            {% for root in parent_categories %}
+          <option value="{{root}}"> {{ root }} </option>
+
+          {% endfor %}
+      </select>
+    </div>
+
+    <!--    dropdown for category selection (subcategory)    -->
+    <div class="form-group">
+      <label for="subcategory">Subcategory:</label>
+      <select name="subcategory" id ="subcategory">
+          <option value="" disabled selected hidden>Select parent category first</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="title">Auction Title:</label>
+      <input type="title" class="form-control" id="title" name="title" placeholder="..." required>
+    </div>
+
+    <div class="form-group">
+      <label for="pname">Product Name:</label>
+      <input type="pname" class="form-control" id="pname" name="pname" placeholder="..." required>
+    </div>
+
+    <div class="form-group">
+      <label for="pdesc">Product Description:</label>
+      <input type="pdesc" class="form-control" id="pdesc" name="pdesc" placeholder="..." required>
+    </div>
+
+    <div class="form-group">
+      <label for="quant">Quantity:</label>
+      <input type="quant" class="form-control" id="quant" name="quant" placeholder="#" required>
+    </div>
+
+    <div class="form-group">
+      <label for="reserveprice">Reserve Price:</label>
+      <input type="reserveprice" class="form-control" id="reserveprice" name="reserveprice" placeholder="0.00" required>
+    </div>
+
+    <div class="form-group">
+      <label for="maxbids">Max Number of Bids:</label>
+      <input type="maxbids" class="form-control" id="maxbids" name="maxbids" placeholder="#" required>
+    </div>
+
+    <div class="form-group">
+      <label for="duration">Listing Duration (Days):</label>
+      <input type="duration" class="form-control" id="duration" name="duration" placeholder="#" required>
+    </div>
+
+
+    {% if error %}
+      <p style="color: red; font-weight: bold;">{{ error }}</p>
+    {% endif %}
+
+    {% if success %}
+      <p style="color: green; font-weight: bold;">{{ success }}</p>
+    {% endif %}
+
+    <button type="submit" class="btn btn-success">List the Item</button>
+    <a href="/welcome/" class="btn btn-danger ml-2">Back</a>
+  </form>
+</div>
+
+</body>
+</html>
+
+
+
+<script>
+    document.getElementById("parent_category").addEventListener("change", function() {
+        const selected = this.value;
+        const subcategorySelect = document.getElementById("subcategory");
+
+        subcategorySelect.innerHTML = '<option value="" disabled selected hidden>Loading...</option>';
+
+        fetch(`/get_subcategories?parent=${encodeURIComponent(selected)}`)
+            .then(response => response.json())
+            .then(data => {
+                subcategorySelect.innerHTML = '<option value="" disabled selected hidden>Choose a subcategory</option>';
+
+                data.subcategories.forEach(sub => {
+                    const option = document.createElement("option");
+                    option.value = sub;
+                    option.textContent = sub;
+                    subcategorySelect.appendChild(option);
+                });
+            })
+    });
+</script>
