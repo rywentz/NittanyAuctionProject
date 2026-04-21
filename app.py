@@ -3,7 +3,7 @@
 
 import csv
 
-from flask import Flask, render_template, request, session, sessions, redirect
+from flask import Flask, render_template, request, session, sessions, redirect, jsonify
 import sqlite3 as sql
 
 import hashlib
@@ -407,6 +407,62 @@ def calculate_age(dob):
 
     return age
 
+@app.route('/listitem', methods=['POST', 'GET'])
+def list_item():
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+    cursor.execute('SELECT category_name FROM Categories WHERE parent_category = "Root" ')
+    parentcategories = cursor.fetchall()
+    parent_categories = [row[0] for row in parentcategories]
+
+    return render_template('listitem.html', parent_categories=parent_categories)
+
+@app.route('/listitemsuccess', methods=['POST', 'GET'])
+def list_item_success():
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+    email = session.get('email')
+    parent_category = request.form['parent_category']
+    sub_category = request.form['subcategory']
+    title = request.form['title']
+    pname = request.form['pname']
+    pdesc = request.form['pdesc']
+    quant = request.form['quant']
+    reserveprice = f"${request.form['reserveprice']}"
+    maxbids = request.form['maxbids']
+
+    cursor.execute('SELECT MAX(listing_id) FROM Auction_Listings')
+    id = cursor.fetchone()
+    id = int(id[0]) + 1
+
+    duration = request.form['duration']
+    duration = int(duration)
+
+    cursor.execute('INSERT INTO Auction_Listings(seller_email, listing_id, category, auction_title, product_name, product_description, quantity, reserve_price, max_bids, status) '
+                        'VALUES (?, ?, ?, ?, ?, ?, ?, ? , ?, ?);', (email, id, sub_category, title, pname, pdesc, quant, reserveprice, maxbids, 1))
+
+    cursor.execute('INSERT OR IGNORE INTO Stop_Times(Listing_ID, Stop_Time) VALUES (?, ?);', (id, duration))
+
+    cursor.execute('INSERT OR IGNORE INTO Image_Paths(product_name, path) VALUES (?, ?);', (pname, 'image-not-found.webp'))
+
+    connection.commit()
+    connection.close()
+    return render_template('listitemsuccess.html')
+
+@app.route('/get_subcategories')
+def get_subcategories():
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+    parent = request.args.get('parent', '')
+
+    #Gets ONLY children
+    cursor.execute('WITH RECURSIVE combined_categories AS (SELECT category_name, parent_category FROM Categories WHERE parent_category = ? UNION ALL SELECT c.category_name, c.parent_category FROM Categories AS c JOIN combined_categories AS cc ON c.parent_category = cc.category_name) SELECT DISTINCT l.category FROM auction_listings AS l JOIN Image_Paths AS i ON i.product_name = l.product_name WHERE l.status = 1 AND l.category IN (SELECT category_name FROM combined_categories)', (parent,))
+    filter_list = cursor.fetchall()
+    filtered = [(filter[0]) for filter in filter_list]
+
+    return jsonify({'subcategories': filtered})
+
+
 @app.route('/catalog/<category>/<name>/<id>', methods=['POST', 'GET'])
 def render_item(category, name, id):
     img_src = pull_image(name)
@@ -451,6 +507,10 @@ def subcatalog(category):
     filtered = [(filter[0]) for filter in filter_list]
     print(filtered)
 
+    #Gets ONLY children
+    cursor.execute('WITH RECURSIVE combined_categories AS (SELECT category_name, parent_category FROM Categories WHERE parent_category = ? UNION ALL SELECT c.category_name, c.parent_category FROM Categories AS c JOIN combined_categories AS cc ON c.parent_category = cc.category_name) SELECT DISTINCT l.category FROM auction_listings AS l JOIN Image_Paths AS i ON i.product_name = l.product_name WHERE l.status = 1 AND l.category IN (SELECT category_name FROM combined_categories)', (category,))
+    filter_list = cursor.fetchall()
+    filtered = [(filter[0]) for filter in filter_list]
 
     if selected_filter:
         cursor.execute('WITH RECURSIVE combined_categories AS (SELECT category_name, parent_category FROM Categories WHERE category_name = ? UNION ALL SELECT c.category_name, c.parent_category FROM Categories AS c JOIN combined_categories AS cc ON c.parent_category = cc.category_name) SELECT l.*, i.path FROM auction_listings AS l JOIN Image_Paths AS i ON i.product_name = l.product_name WHERE l.status = 1 AND l.category IN (SELECT category_name FROM combined_categories)',(selected_filter,))
