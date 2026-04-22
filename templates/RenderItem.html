@@ -10,8 +10,7 @@
 </head>
 
 <body style="background-color:AntiqueWhite; margin:0; overflow-x:hidden;">
-<div style="position:relative; min-height:100vh;">
-<h1 style="background-color:LightBlue; text-align: center"> {{ product[3] }} </h1>
+<div style="position:relative; min-height:900px;"><h1 style="background-color:LightBlue; text-align: center"> {{ product[3] }} </h1>
 <h4 style = "text-align: center; background-color:Azure" >
 </h4>
 <br>
@@ -20,8 +19,7 @@
 
 
     <!--For image loading and display-->
-    <div style="background: white; height:650px; width:650px; position: absolute; left: 100px; border: 1px; border-radius: 16px; padding: 25px; margin-bottom: 12px; display: flex; justify-content: center; align-items: center; box-shadow: 2px 2px;">
-        {% if not img_src or img_src == 'None' %}
+    <div style="background: white; min-height:760px; width:650px; position: absolute; left: 100px; border: 1px; border-radius: 16px; padding: 25px; margin-bottom: 12px; display: flex; justify-content: center; align-items: center; box-shadow: 2px 2px;">        {% if not img_src or img_src == 'None' %}
             <div style="width:600px; height:600px; flex-shrink:0; background:gray; border-radius:4px; display:flex; align-items:center; justify-content:center; color:darkgray; font-size:25px;">
                 No Image
             </div>
@@ -35,12 +33,11 @@
 
 
     <!--For the information box to the right of image-->
-    <div style="background: white; height:650px; width:950px; position: absolute; left: 760px; border: 1px; border-radius: 16px; padding: 25px; margin-bottom: 12px; box-shadow: 2px 2px;">
-        <div style="font-size:30px; color:black; margin-top:2px; font-weight:700;">{{ name }}</div>
+    <div style="background: white; min-height:760px; width:950px; position: absolute; left: 760px; border: 1px; border-radius: 16px; padding: 25px; margin-bottom: 12px; box-shadow: 2px 2px;">        <div style="font-size:30px; color:black; margin-top:2px; font-weight:700;">{{ name }}</div>
         <hr>
         <div style="font-size:18px; color:black; margin-top:12px; font-weight:500;">Seller: {{ product[0] }}</div>
 
-        <div style="font-size:18px; margin-top:12px; font-weight:500;">
+        <div style="font-size:18px; margin-top:1px; font-weight:500;">
             <span style="color:black;">Seller Rating:</span>
 
             {% if rating == "Unrated" %}
@@ -54,62 +51,77 @@
             {% endif %}
         </div>
 
-        <div style="font-size:18px; color:black; margin-top:22px; font-weight:10;">Seller's Description: {{ product[5] }}</div>
+        <div style="font-size:18px; color:black; margin-top:5px; font-weight:10;">Seller's Description: {{ product[5] }}</div>
         <hr>
-        <div style="font-size:46px; color:black; right:50%; margin-top:32px; font-weight:400;">US {{ product[7] }}</div>
-        <div style="font-size:15px; color:black; right:25%; font-weight:400;">Time left: {{ stoptime }} days </div>
 
+        <div style="font-size:36px; color:black; margin-top:5px; font-weight:400;">US {{ product[7] }}</div>
+        <div style="font-size:15px; color:black; font-weight:400;">Time left: {{ stoptime }} days </div>
 
+        <div style="font-size:20px; color:black; margin-top:10px; font-weight:500;">Current Highest Bid: ${{ highest_bid }}</div>
+        <div style="font-size:18px; color:black; margin-top:10px; font-weight:400;">Bids Placed: {{ bid_count }}</div>
+        <div style="font-size:18px; color:black; margin-top:10px; font-weight:400;">Remaining Bids: {{ remaining_bids }}</div>
 
-        <div style="position: absolute; bottom:20px; width:95%">
-            <hr>
-            <div style="font-size:18px; color:black; margin-bottom:95px;">Quantity: {{ product[6] }}</div>
-            <div style="font-size:20px; color:black; margin-top:35px; font-weight:500;">Current Highest Bid: ${{ highest_bid }}</div>
-            <div style="font-size:18px; color:black; margin-top:10px; font-weight:400;">Bids Placed: {{ bid_count }}</div>
-            <div style="font-size:18px; color:black; margin-top:10px; font-weight:400;">Remaining Bids: {{ remaining_bids }}</div>
+        {% if session.get('role') == 'Buyer' and not auction_ended %}
+            <div style="margin-top:20px;">
+                <form action="/place_bid" method="POST">
+                    <input type="hidden" name="seller_email" value="{{ product[0] }}">
+                    <input type="hidden" name="listing_id" value="{{ id }}">
+                    <input type="hidden" name="category" value="{{ category }}">
+                    <input type="hidden" name="name" value="{{ name }}">
 
-            {% if session.get('role') == 'Buyer' %}
-                <div style="margin-top:25px;">
-                    <form action="/place_bid" method="POST">
-                        <input type="hidden" name="seller_email" value="{{ product[0] }}">
-                        <input type="hidden" name="listing_id" value="{{ id }}">
-                        <input type="hidden" name="category" value="{{ category }}">
-                        <input type="hidden" name="name" value="{{ name }}">
+                    <div class="form-group" style="max-width:250px;">
+                        <label for="bid_amount"><b>Your Bid:</b></label>
+                        <input type="number" min="1" step="1" class="form-control" id="bid_amount" name="bid_amount" placeholder="Enter bid amount" required>
+                    </div>
 
-                        <div class="form-group" style="max-width:250px;">
-                            <label for="bid_amount"><b>Your Bid:</b></label>
-                            <input type="number" min="1" step="1" class="form-control" id="bid_amount" name="bid_amount" placeholder="Enter bid amount" required>
-                        </div>
+                    <button type="submit" class="btn btn-primary">Place Bid</button>
+                </form>
+            </div>
+        {% endif %}
 
-                        <button type="submit" class="btn btn-primary">Place Bid</button>
+        {% if auction_ended %}
+            <div style="margin-top:20px;">
+                <p style="font-weight:bold; margin-bottom:12px;">{{ auction_message }}</p>
+
+                {% if winner_unpaid %}
+                    <form action="/payment/{{ product[0] }}/{{ id }}" method="GET" style="margin:0;">
+                        <button type="submit" class="btn btn-warning">Go to Payment</button>
                     </form>
-                </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {% if not auction_ended %}
+            <div style="min-height:30px; margin-top:15px;">
+                {% if bid_error %}
+                    <p style="color:red; font-weight:bold; margin:0;">{{ bid_error }}</p>
+                {% endif %}
+
+                {% if bid_success %}
+                    <p style="color:green; font-weight:bold; margin:0;">{{ bid_success }}</p>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <div style="font-size:18px; color:black; margin-top:20px;">Quantity: {{ product[6] }}</div>
+
+        <div style="display:flex; align-items:center; gap:12px; margin-top:20px;">
+            {% if in_watchlist %}
+                <button class="btn btn-success" disabled>✓ Added to Watchlist</button>
+            {% else %}
+                <form action="/add_watchlist" method="POST" style="margin:0;">
+                    <input type="hidden" name="seller_email" value="{{ product[0] }}">
+                    <input type="hidden" name="listing_id" value="{{ id }}">
+                    <button type="submit" class="btn btn-success">Add to Watchlist</button>
+                </form>
             {% endif %}
+
+            <form action="/catalog/{{ category }}" style="margin:0;">
+                <button type="submit" class="btn btn-info">Go Back</button>
+            </form>
         </div>
-
-
-
     </div>
 
-
-
-
-
-<div style="display:flex; align-items:center; gap:12px; position:absolute; left:58%; top:695px;">
-    {% if in_watchlist %}
-        <button class="btn btn-success" disabled>✓ Added to Watchlist</button>
-    {% else %}
-        <form action="/add_watchlist" method="POST" style="margin:0;">
-            <input type="hidden" name="seller_email" value="{{ product[0] }}">
-            <input type="hidden" name="listing_id" value="{{ id }}">
-            <button type="submit" class="btn btn-success">Add to Watchlist</button>
-        </form>
-    {% endif %}
-
-    <form action="/catalog/{{ category }}" style="margin:0;">
-        <button type="submit" class="btn btn-info">Go Back</button>
-    </form>
-</div>
 </div>
 </body>
 </html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <title>Payment</title>
+</head>
+
+<body style="background-color:AntiqueWhite; min-height:100vh;">
+
+<div style="background:white; padding:40px; box-shadow:0 2px 8px black; display:flex; align-items:center; justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:8px;">
+        <h3>Nittany Auction</h3>
+
+        <img src="{{ url_for('static', filename='NittanyAuction_Logo.webp') }}"
+             alt="Nittany Auction Logo"
+             loading="lazy"
+             style="height:40px;">
+    </div>
+
+    <div style="display:flex; align-items:center; gap:10px;">
+        <span style="margin-right:10px; color:gray;">
+            {{ session.get('email') }} (Buyer)
+        </span>
+
+        <form action="/welcome/" method="GET">
+            <button class="btn btn-outline-info btn-sm">Home</button>
+        </form>
+
+        <form action="/login" method="GET">
+            <button class="btn btn-outline-danger btn-sm">Logout</button>
+        </form>
+    </div>
+</div>
+
+<br>
+<br>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-body">
+            <h4 class="card-title">Complete Payment</h4>
+            <hr>
+
+            <p><b>Product:</b> {{ listing[4] }}</p>
+            <p><b>Seller:</b> {{ seller_email }}</p>
+            <p><b>Winning Bid:</b> ${{ highest_bid }}</p>
+
+            {% if card_info %}
+                <p><b>Card Number:</b> {{ card_info[0] }}</p>
+                <p><b>Card Type:</b> {{ card_info[1] }}</p>
+                <p><b>Expiration:</b> {{ card_info[2] }}/{{ card_info[3] }}</p>
+            {% else %}
+                <p style="color:red;"><b>No saved credit card found. Enter card information below.</b></p>
+
+                <div class="form-group" style="max-width:300px;">
+                    <label for="credit_card_num"><b>Card Number:</b></label>
+                    <input type="text" class="form-control" id="credit_card_num" name="credit_card_num" required>
+                </div>
+
+                <div class="form-group" style="max-width:300px;">
+                    <label for="card_type"><b>Card Type:</b></label>
+                    <input type="text" class="form-control" id="card_type" name="card_type" required>
+                </div>
+
+                <div class="form-group" style="max-width:300px;">
+                    <label for="expire_month"><b>Expire Month:</b></label>
+                    <input type="number" class="form-control" id="expire_month" name="expire_month" min="1" max="12" required>
+                </div>
+
+                <div class="form-group" style="max-width:300px;">
+                    <label for="expire_year"><b>Expire Year:</b></label>
+                    <input type="number" class="form-control" id="expire_year" name="expire_year" required>
+                </div>
+
+                <div class="form-group" style="max-width:300px;">
+                    <label for="security_code"><b>Security Code:</b></label>
+                    <input type="number" class="form-control" id="security_code" name="security_code" required>
+                </div>
+            {% endif %}
+
+            <form action="/submit_payment" method="POST">
+                <input type="hidden" name="seller_email" value="{{ seller_email }}">
+                <input type="hidden" name="listing_id" value="{{ listing_id }}">
+                <input type="hidden" name="payment_amount" value="{{ highest_bid }}">
+
+                <button type="submit" class="btn btn-success">Submit Payment</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

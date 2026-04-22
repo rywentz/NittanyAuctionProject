@@ -490,6 +490,11 @@ def get_subcategories():
 def render_item(category, name, id):
     img_src = pull_image(name)
     bidder_email = session.get('email')
+    bid_error = request.args.get('bid_error')
+    bid_success = request.args.get('bid_success')
+    auction_ended = False
+    winner_unpaid = False
+    auction_message = None
 
     connection = sql.connect('database.db')
     cursor = connection.cursor()
@@ -522,9 +527,26 @@ def render_item(category, name, id):
 
     remaining_bids = product[8] - bid_count
 
+    reserve_price = int(product[7].replace('$', '').strip())
+
+    if remaining_bids <= 0:
+        auction_ended = True
+
+        if highest_bid >= reserve_price:
+            cursor.execute('SELECT bidder_email FROM Bids WHERE seller_email = ? AND listing_id = ? ORDER BY bid_price DESC, bid_id DESC LIMIT 1', (product[0], id))
+            winner_row = cursor.fetchone()
+
+            if winner_row is not None and winner_row[0] == bidder_email and product[9] != 2:
+                winner_unpaid = True
+                auction_message = 'Auction ended. You are the winning bidder. Proceed to payment.'
+            else:
+                auction_message = 'Auction ended. Another bidder won this item.'
+        else:
+            auction_message = 'Auction ended. The reserve price was not met.'
+
     connection.close()
 
-    return render_template('RenderItem.html', name=name, category=category, id=id, img_src=img_src, product=product, stoptime=stoptime[1], in_watchlist=in_watchlist, rating=rating, highest_bid=highest_bid, bid_count=bid_count, remaining_bids=remaining_bids)
+    return render_template('RenderItem.html', name=name, category=category, id=id, img_src=img_src, product=product, stoptime=stoptime[1], in_watchlist=in_watchlist, rating=rating, highest_bid=highest_bid, bid_count=bid_count, remaining_bids=remaining_bids, bid_error=bid_error, bid_success=bid_success, auction_ended=auction_ended, winner_unpaid=winner_unpaid, auction_message=auction_message)
 
 
 @app.route('/place_bid', methods=['POST'])
@@ -539,15 +561,14 @@ def place_bid():
     name = request.form['name']
 
     try:
-        bid_amount = int(request.form['bid_amount'])
+        bid_amount = float(request.form['bid_amount'])
     except ValueError:
-        return redirect(f'/catalog/{category}/{name}/{listing_id}')
+        return redirect(f'/catalog/{category}/{name}/{listing_id}?bid_error=Invalid+bid+amount')
 
     connection = sql.connect('database.db')
     cursor = connection.cursor()
 
-    cursor.execute('SELECT * FROM Auction_Listings WHERE seller_email = ? AND listing_id = ?',
-                   (seller_email, listing_id))
+    cursor.execute('SELECT * FROM Auction_Listings WHERE seller_email = ? AND listing_id = ?', (seller_email, listing_id))
     listing = cursor.fetchone()
 
     if listing is None:
@@ -556,17 +577,15 @@ def place_bid():
 
     max_bids = listing[8]
 
-    cursor.execute('SELECT COUNT(*) FROM Bids WHERE seller_email = ? AND listing_id = ?',
-                   (seller_email, listing_id))
+    cursor.execute('SELECT COUNT(*) FROM Bids WHERE seller_email = ? AND listing_id = ?', (seller_email, listing_id))
     bid_count = cursor.fetchone()[0]
 
     # Auction ends when max_bids is reached
     if bid_count >= max_bids:
         connection.close()
-        return redirect(f'/catalog/{category}/{name}/{listing_id}')
+        return redirect(f'/catalog/{category}/{name}/{listing_id}?bid_error=Auction+ended')
 
-    cursor.execute('SELECT MAX(bid_price) FROM Bids WHERE seller_email = ? AND listing_id = ?',
-                   (seller_email, listing_id))
+    cursor.execute('SELECT MAX(bid_price) FROM Bids WHERE seller_email = ? AND listing_id = ?', (seller_email, listing_id))
     highest_bid_row = cursor.fetchone()
 
     if highest_bid_row[0] is None:
@@ -575,18 +594,17 @@ def place_bid():
         highest_bid = highest_bid_row[0]
 
     # New bid must be at least $1 higher than current highest bid
-    if bid_amount < highest_bid + 1:
+    if bid_amount < round(highest_bid + 1, 2):
         connection.close()
-        return redirect(f'/catalog/{category}/{name}/{listing_id}')
+        return redirect(f'/catalog/{category}/{name}/{listing_id}?bid_error=Bid+too+low')
 
-    cursor.execute('SELECT bidder_email FROM Bids WHERE seller_email = ? AND listing_id = ? ORDER BY bid_id DESC LIMIT 1',
-                   (seller_email, listing_id))
+    cursor.execute('SELECT bidder_email FROM Bids WHERE seller_email = ? AND listing_id = ? ORDER BY bid_id DESC LIMIT 1', (seller_email, listing_id))
     last_bidder = cursor.fetchone()
 
     # Bidder cannot place consecutive bids
     if last_bidder is not None and last_bidder[0] == bidder_email:
         connection.close()
-        return redirect(f'/catalog/{category}/{name}/{listing_id}')
+        return redirect(f'/catalog/{category}/{name}/{listing_id}?bid_error=You+must+wait+for+another+bidder')
 
     cursor.execute('SELECT MAX(bid_id) FROM Bids')
     max_bid_id = cursor.fetchone()[0]
@@ -596,13 +614,190 @@ def place_bid():
     else:
         new_bid_id = max_bid_id + 1
 
-    cursor.execute('INSERT INTO Bids(bid_id, seller_email, listing_id, bidder_email, bid_price) VALUES (?, ?, ?, ?, ?)',
-                   (new_bid_id, seller_email, listing_id, bidder_email, bid_amount))
+    cursor.execute('INSERT INTO Bids(bid_id, seller_email, listing_id, bidder_email, bid_price) VALUES (?, ?, ?, ?, ?)', (new_bid_id, seller_email, listing_id, bidder_email, bid_amount))
+
+    cursor.execute('SELECT COUNT(*) FROM Bids WHERE seller_email = ? AND listing_id = ?', (seller_email, listing_id))
+
+    updated_bid_count = cursor.fetchone()[0]
+
+    if updated_bid_count >= max_bids:
+        cursor.execute('SELECT MAX(bid_price) FROM Bids WHERE seller_email = ? AND listing_id = ?', (seller_email, listing_id))
+        final_highest_bid = cursor.fetchone()[0]
+
+        reserve_price_text = listing[7]
+        reserve_price = int(reserve_price_text.replace('$', '').strip())
+
+        # Auction is unsuccessful if reserve price is not met
+        if final_highest_bid < reserve_price:
+            cursor.execute('UPDATE Auction_Listings SET status = 0 WHERE seller_email = ? AND listing_id = ?', (seller_email, listing_id))
+            connection.commit()
+            connection.close()
+            return redirect(f'/catalog/{category}/{name}/{listing_id}?bid_error=Auction+ended.+Reserve+price+not+met')
+
+        # Auction is successful, current bidder is the winner
+        connection.commit()
+        connection.close()
+        return redirect(f'/catalog/{category}/{name}/{listing_id}?bid_success=Auction+ended.+You+are+the+winning+bidder.+Proceed+to+payment.')
 
     connection.commit()
     connection.close()
 
-    return redirect(f'/catalog/{category}/{name}/{listing_id}')
+    return redirect(f'/catalog/{category}/{name}/{listing_id}?bid_success=Bid+placed+successfully')
+
+
+@app.route('/payment/<seller_email>/<int:listing_id>', methods=['GET'])
+def payment_page(seller_email, listing_id):
+    if session.get('role') != 'Buyer':
+        return redirect('/login')
+
+    bidder_email = session.get('email')
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    cursor.execute('SELECT * FROM Auction_Listings WHERE seller_email = ? AND listing_id = ?', (seller_email, listing_id))
+    listing = cursor.fetchone()
+
+    if listing is None:
+        connection.close()
+        return redirect('/catalog')
+
+    # Do not allow payment for listings that are already sold or inactive
+    if listing[9] != 1:
+        connection.close()
+        return redirect('/catalog')
+
+    max_bids = listing[8]
+    reserve_price = int(listing[7].replace('$', '').strip())
+
+    cursor.execute('SELECT COUNT(*) FROM Bids WHERE seller_email = ? AND listing_id = ?', (seller_email, listing_id))
+    bid_count = cursor.fetchone()[0]
+
+    cursor.execute('SELECT MAX(bid_price) FROM Bids WHERE seller_email = ? AND listing_id = ?', (seller_email, listing_id))
+    highest_bid = cursor.fetchone()[0]
+
+    # Payment allowed only after auction is complete
+    if bid_count < max_bids or highest_bid is None:
+        connection.close()
+        return redirect(f'/catalog/{listing[2]}/{listing[4]}/{listing_id}?bid_error=Auction+is+not+complete')
+
+    # Payment allowed only if reserve price was met
+    if highest_bid < reserve_price:
+        connection.close()
+        return redirect(f'/catalog/{listing[2]}/{listing[4]}/{listing_id}?bid_error=Reserve+price+not+met')
+
+    cursor.execute('SELECT bidder_email FROM Bids WHERE seller_email = ? AND listing_id = ? ORDER BY bid_price DESC, bid_id DESC LIMIT 1', (seller_email, listing_id))
+    winner_row = cursor.fetchone()
+
+    if winner_row is None or winner_row[0] != bidder_email:
+        connection.close()
+        return redirect(f'/catalog/{listing[2]}/{listing[4]}/{listing_id}?bid_error=You+are+not+the+winning+bidder')
+
+    card_info = pull_credit_card(bidder_email)
+
+    connection.close()
+
+    return render_template('payment.html',
+                           listing=listing,
+                           highest_bid=highest_bid,
+                           seller_email=seller_email,
+                           listing_id=listing_id,
+                           card_info=card_info)
+
+
+@app.route('/submit_payment', methods=['POST'])
+def submit_payment():
+    if session.get('role') != 'Buyer':
+        return redirect('/login')
+
+    bidder_email = session.get('email')
+    seller_email = request.form['seller_email']
+    listing_id = int(request.form['listing_id'])
+    payment_amount = float(request.form['payment_amount'])
+
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    cursor.execute('SELECT * FROM Auction_Listings WHERE seller_email = ? AND listing_id = ?', (seller_email, listing_id))
+    listing = cursor.fetchone()
+
+    if listing is None:
+        connection.close()
+        return redirect('/catalog')
+
+    # Payment should only happen for an active listing that has not been sold yet
+    if listing[9] != 1:
+        connection.close()
+        return redirect('/catalog')
+
+    max_bids = listing[8]
+    reserve_price = int(listing[7].replace('$', '').strip())
+
+    cursor.execute('SELECT COUNT(*) FROM Bids WHERE seller_email = ? AND listing_id = ?', (seller_email, listing_id))
+    bid_count = cursor.fetchone()[0]
+
+    cursor.execute('SELECT MAX(bid_price) FROM Bids WHERE seller_email = ? AND listing_id = ?', (seller_email, listing_id))
+    highest_bid = cursor.fetchone()[0]
+
+    # Auction must be complete before payment
+    if bid_count < max_bids or highest_bid is None:
+        connection.close()
+        return redirect('/catalog')
+
+    # Reserve price must be met
+    if highest_bid < reserve_price:
+        connection.close()
+        return redirect('/catalog')
+
+    cursor.execute('SELECT bidder_email FROM Bids WHERE seller_email = ? AND listing_id = ? ORDER BY bid_price DESC, bid_id DESC LIMIT 1', (seller_email, listing_id))
+    winner_row = cursor.fetchone()
+
+    if winner_row is None or winner_row[0] != bidder_email:
+        connection.close()
+        return redirect('/catalog')
+
+    # Prevent duplicate payment/transaction for the same listing
+    cursor.execute('SELECT 1 FROM Transactions WHERE seller_email = ? AND listing_id = ?', (seller_email, listing_id))
+    existing_transaction = cursor.fetchone()
+
+    if existing_transaction is not None:
+        connection.close()
+        return redirect('/catalog')
+
+    cursor.execute('SELECT * FROM Credit_Cards WHERE owner_email = ?', (bidder_email,))
+    saved_card = cursor.fetchone()
+
+    if saved_card is None:
+        credit_card_num = request.form.get('credit_card_num')
+        card_type = request.form.get('card_type')
+        expire_month = request.form.get('expire_month')
+        expire_year = request.form.get('expire_year')
+        security_code = request.form.get('security_code')
+
+        if not credit_card_num or not card_type or not expire_month or not expire_year or not security_code:
+            connection.close()
+            return redirect(f'/payment/{seller_email}/{listing_id}')
+
+        cursor.execute('INSERT INTO Credit_Cards(credit_card_num, card_type, expire_month, expire_year, security_code, owner_email) VALUES (?, ?, ?, ?, ?, ?)', (credit_card_num, card_type, int(expire_month), int(expire_year), int(security_code), bidder_email))
+
+    cursor.execute('SELECT MAX(transaction_id) FROM Transactions')
+    max_transaction_id = cursor.fetchone()[0]
+
+    if max_transaction_id is None:
+        new_transaction_id = 1
+    else:
+        new_transaction_id = max_transaction_id + 1
+
+    today = date.today().strftime('%-m/%-d/%y')
+
+    cursor.execute('INSERT INTO Transactions(transaction_id, seller_email, listing_id, bidder_email, date, payment) VALUES (?, ?, ?, ?, ?, ?)', (new_transaction_id, seller_email, listing_id, bidder_email, today, payment_amount))
+
+    cursor.execute('UPDATE Auction_Listings SET status = 2 WHERE seller_email = ? AND listing_id = ?', (seller_email, listing_id))
+
+    connection.commit()
+    connection.close()
+
+    return redirect('/welcome/')
+
 
 @app.route('/catalog/<category>/', methods=['POST', 'GET'])
 def subcatalog(category):
