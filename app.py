@@ -42,6 +42,19 @@ def homepage():
 
 @app.route('/login', methods=['POST', 'GET'])
 def login():
+    # Gets hot items
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+    cursor.execute(
+        'SELECT A.*, I.path FROM Auction_Listings AS A, Image_paths AS I WHERE listing_id = 726 AND path = "ermmo.webp"')
+    hotitem1 = cursor.fetchone()
+    cursor.execute(
+        'SELECT A.*, I.path FROM Auction_Listings AS A, Image_paths AS I WHERE listing_id = 750 AND path = "gwelectricscooter.webp"')
+    hotitem2 = cursor.fetchone()
+    cursor.execute(
+        'SELECT A.*, I.path FROM Auction_Listings AS A, Image_paths AS I WHERE listing_id = 1733 AND path = "s23.webp"')
+    hotitem3 = cursor.fetchone()
+
     error = None
     if request.method == 'POST':
         email_user = request.form["email"]
@@ -65,7 +78,7 @@ def login():
                 if cursor.fetchone():
                     session['role'] = 'HelpDesk'
                     connection.close()
-                    return render_template('welcome.html', role='HelpDesk', email=email_user)
+                    return render_template('welcome.html', role='HelpDesk', email=email_user, hotitem1=hotitem1, hotitem2=hotitem2, hotitem3=hotitem3)
             except sql.OperationalError:
                 pass
             try:
@@ -73,12 +86,12 @@ def login():
                 if cursor.fetchone():
                     session['role'] = 'Seller'
                     connection.close()
-                    return render_template('welcome.html', role='Seller', email=email_user)
+                    return render_template('welcome.html', role='Seller', email=email_user,hotitem1=hotitem1, hotitem2=hotitem2, hotitem3=hotitem3)
             except sql.OperationalError:
                 pass
             session['role'] = 'Buyer'
             connection.close()
-            return render_template('welcome.html', role='Buyer', email=email_user)
+            return render_template('welcome.html', role='Buyer', email=email_user,hotitem1=hotitem1, hotitem2=hotitem2, hotitem3=hotitem3)
         else:
             connection.close()
             error = 'Incorrect password or email, try again.'
@@ -138,20 +151,13 @@ def welcome():
     connection = sql.connect('database.db')
     cursor = connection.cursor()
 
-    #Gets hot items
-    cursor.execute('SELECT A.*, I.path FROM Auction_Listings AS A, Image_paths AS I WHERE listing_id = 726 AND path = "ermmo.webp"')
-    hotitem1 = cursor.fetchone()
-    cursor.execute('SELECT A.*, I.path FROM Auction_Listings AS A, Image_paths AS I WHERE listing_id = 750 AND path = "gwelectricscooter.webp"')
-    hotitem2 = cursor.fetchone()
-    cursor.execute('SELECT A.*, I.path FROM Auction_Listings AS A, Image_paths AS I WHERE listing_id = 1733 AND path = "s23.webp"')
-    hotitem3 = cursor.fetchone()
 
     connection.close()
 
 
 
 
-    return render_template('welcome.html', email=session.get('email'), role=session.get('role'), hotitem1=hotitem1, hotitem2=hotitem2, hotitem3=hotitem3)
+    return render_template('welcome.html', email=session.get('email'), role=session.get('role'))
 
 
 @app.route('/logout')
