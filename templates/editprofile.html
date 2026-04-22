@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <title>Edit Profile</title>
+</head>
+<body style="background-color:AntiqueWhite; min-height:100vh;">
+
+<div style="background:white; padding:20px; box-shadow:0 2px 8px black; display:flex; align-items:center; justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:8px;">
+        <h3>Nittany Auction</h3>
+        <img src="{{ url_for('static', filename='NittanyAuction_Logo.webp') }}"
+             alt="Nittany Auction Logo"
+             loading="lazy"
+             style="height:40px;">
+    </div>
+    <div>
+        <b>Edit Profile</b>
+    </div>
+</div>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-body">
+            {% if message %}
+                <p style="
+                    font-weight:bold;
+                    color:
+                    {% if message_type == 'success' %}
+                        green
+                    {% elif message_type == 'info' %}
+                        #555
+                    {% else %}
+                        red
+                    {% endif %}
+                    ;
+                ">
+                    {{ message }}
+                </p>
+            {% endif %}
+            <form action="/update_profile" method="POST">
+
+                <div class="form-group">
+                    <label>Email address:</label>
+                    <input type="email" class="form-control" value="{{ email }}" readonly>
+                    <small class="form-text text-muted">
+                        Email cannot be changed directly. Please contact HelpDesk.
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="first_name">First Name:</label>
+                    <input type="text" class="form-control" id="first_name" name="first_name" value="{{ first_name }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="last_name">Last Name:</label>
+                    <input type="text" class="form-control" id="last_name" name="last_name" value="{{ last_name }}" required>
+                </div>
+
+                {% if role == 'Buyer' %}
+                <div class="form-group">
+                    <label for="major">Major:</label>
+                    <input type="text" class="form-control" id="major" name="major" value="{{ major }}" required>
+                </div>
+                {% endif %}
+
+                <div class="form-group">
+                    <label for="street_num">Street Number:</label>
+                    <input type="text" class="form-control" id="street_num" name="street_num" value="{{ street_num }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="street_name">Street Name:</label>
+                    <input type="text" class="form-control" id="street_name" name="street_name" value="{{ street_name }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="zipcode">Zipcode:</label>
+                    <input type="text" class="form-control" id="zipcode" name="zipcode" value="{{ zipcode }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="city">City:</label>
+                    <input type="text" class="form-control" id="city" name="city" value="{{ city }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="state">State:</label>
+                    <input type="text" class="form-control" id="state" name="state" value="{{ state }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="new_password">New Password:</label>
+                    <input type="password" class="form-control" id="new_password" name="new_password" placeholder="Leave blank to keep current password">
+                </div>
+
+                <button type="submit" class="btn btn-success">Save Changes</button>
+                <a href="/account" class="btn btn-secondary ml-2">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

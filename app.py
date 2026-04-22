@@ -2,6 +2,7 @@
 # Original code credits to Penn State University CMPSC 431W Spring 2026 Semester
 
 import csv
+from email import message
 
 from flask import Flask, render_template, request, session, sessions, redirect, jsonify
 import sqlite3 as sql
@@ -200,6 +201,281 @@ def view_account():
                                    exp=expire_date, security_code=card_info[4], picture=profile_picture, rating=average_rating)
 
     return render_template('account.html')
+
+
+@app.route('/edit_profile', methods=['GET'])
+def edit_profile():
+    if 'email' not in session:
+        return redirect('/login')
+
+    email = session.get('email')
+    role = session.get('role')
+    message = request.args.get('message')
+    message_type = request.args.get('message_type')
+
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    if role == 'Buyer':
+        cursor.execute('SELECT first_name, last_name, major, home_address_id FROM Bidders WHERE email = ?', (email,))
+        bidder = cursor.fetchone()
+
+        if bidder is None:
+            connection.close()
+            return redirect('/account')
+
+        first_name, last_name, major, address_id = bidder
+
+        cursor.execute('SELECT street_num, street_name, zipcode FROM Address WHERE address_ID = ?', (address_id,))
+        address_row = cursor.fetchone()
+
+        city = ''
+        state = ''
+        street_num = ''
+        street_name = ''
+        zipcode = ''
+
+        if address_row is not None:
+            street_num, street_name, zipcode = address_row
+            cursor.execute('SELECT city, state FROM Zipcode_Info WHERE zipcode = ?', (zipcode,))
+            zip_row = cursor.fetchone()
+            if zip_row is not None:
+                city, state = zip_row
+
+        connection.close()
+
+        return render_template(
+            'editprofile.html',
+            email=email,
+            role=role,
+            first_name=first_name,
+            last_name=last_name,
+            major=major,
+            street_num=street_num,
+            street_name=street_name,
+            zipcode=zipcode,
+            city=city,
+            state=state,
+            message=message,
+            message_type=message_type
+        )
+
+    elif role == 'Seller':
+        cursor.execute('SELECT first_name, last_name, home_address_id FROM Bidders WHERE email = ?', (email,))
+        seller_row = cursor.fetchone()
+
+        if seller_row is None:
+            connection.close()
+            return redirect('/account')
+
+        first_name, last_name, address_id = seller_row
+
+        cursor.execute('SELECT street_num, street_name, zipcode FROM Address WHERE address_ID = ?', (address_id,))
+        address_row = cursor.fetchone()
+
+        city = ''
+        state = ''
+        street_num = ''
+        street_name = ''
+        zipcode = ''
+
+        if address_row is not None:
+            street_num, street_name, zipcode = address_row
+            cursor.execute('SELECT city, state FROM Zipcode_Info WHERE zipcode = ?', (zipcode,))
+            zip_row = cursor.fetchone()
+            if zip_row is not None:
+                city, state = zip_row
+
+        connection.close()
+
+        return render_template(
+            'editprofile.html',
+            email=email,
+            role=role,
+            first_name=first_name,
+            last_name=last_name,
+            major='',
+            street_num=street_num,
+            street_name=street_name,
+            zipcode=zipcode,
+            city=city,
+            state=state,
+            message=message,
+            message_type=message_type
+        )
+
+    connection.close()
+    return redirect('/account')
+
+
+@app.route('/update_profile', methods=['POST'])
+def update_profile():
+    if 'email' not in session:
+        return redirect('/login')
+
+    email = session.get('email')
+    role = session.get('role')
+
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    if role == 'Buyer':
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
+        major = request.form['major']
+        street_num = request.form['street_num']
+        street_name = request.form['street_name']
+        zipcode = request.form['zipcode']
+        city = request.form['city']
+        state = request.form['state']
+        new_password = request.form['new_password']
+
+        cursor.execute('SELECT first_name, last_name, major, home_address_id FROM Bidders WHERE email = ?', (email,))
+        bidder_row = cursor.fetchone()
+
+        if bidder_row is None:
+            connection.close()
+            return redirect('/account')
+
+        current_first_name, current_last_name, current_major, address_id = bidder_row
+
+        cursor.execute('SELECT street_num, street_name, zipcode FROM Address WHERE address_ID = ?', (address_id,))
+        address_row = cursor.fetchone()
+
+        current_street_num = ''
+        current_street_name = ''
+        current_zipcode = ''
+        current_city = ''
+        current_state = ''
+
+        if address_row is not None:
+            current_street_num, current_street_name, current_zipcode = address_row
+            cursor.execute('SELECT city, state FROM Zipcode_Info WHERE zipcode = ?', (current_zipcode,))
+            zip_row = cursor.fetchone()
+            if zip_row is not None:
+                current_city, current_state = zip_row
+
+        profile_changed = (
+            str(first_name) != str(current_first_name) or
+            str(last_name) != str(current_last_name) or
+            str(major) != str(current_major) or
+            str(street_num) != str(current_street_num) or
+            str(street_name) != str(current_street_name) or
+            str(zipcode) != str(current_zipcode) or
+            str(city) != str(current_city) or
+            str(state) != str(current_state)
+        )
+
+        password_changed = new_password.strip() != ''
+
+        if not profile_changed and not password_changed:
+            connection.close()
+            return redirect('/edit_profile?message=No+changes+were+made&message_type=info')
+
+        if profile_changed:
+            cursor.execute(
+                'UPDATE Bidders SET first_name = ?, last_name = ?, major = ? WHERE email = ?', (first_name, last_name, major, email))
+
+            cursor.execute(
+                'UPDATE Address SET street_num = ?, street_name = ?, zipcode = ? WHERE address_ID = ?', (street_num, street_name, zipcode, address_id))
+
+            cursor.execute(
+                'INSERT OR REPLACE INTO Zipcode_Info(zipcode, city, state) VALUES (?, ?, ?)',
+                (zipcode, city, state)
+            )
+
+        if password_changed:
+            hashed_password = hashing(new_password)
+            cursor.execute('UPDATE Users SET password = ? WHERE email = ?', (hashed_password, email))
+
+        connection.commit()
+        connection.close()
+
+        if profile_changed and password_changed:
+            return redirect('/edit_profile?message=Your+profile+and+password+have+been+updated&message_type=success')
+        elif profile_changed:
+            return redirect('/edit_profile?message=Your+profile+has+been+updated&message_type=success')
+        else:
+            return redirect('/edit_profile?message=Your+password+has+been+updated&message_type=success')
+
+
+    elif role == 'Seller':
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
+        street_num = request.form['street_num']
+        street_name = request.form['street_name']
+        zipcode = request.form['zipcode']
+        city = request.form['city']
+        state = request.form['state']
+        new_password = request.form['new_password']
+
+        cursor.execute('SELECT first_name, last_name, home_address_id FROM Bidders WHERE email = ?', (email,))
+        seller_row = cursor.fetchone()
+
+        if seller_row is None:
+            connection.close()
+            return redirect('/account')
+
+        current_first_name, current_last_name, address_id = seller_row
+
+        cursor.execute('SELECT street_num, street_name, zipcode FROM Address WHERE address_ID = ?', (address_id,))
+        address_row = cursor.fetchone()
+
+        current_street_num = ''
+        current_street_name = ''
+        current_zipcode = ''
+        current_city = ''
+        current_state = ''
+
+        if address_row is not None:
+            current_street_num, current_street_name, current_zipcode = address_row
+            cursor.execute('SELECT city, state FROM Zipcode_Info WHERE zipcode = ?', (current_zipcode,))
+            zip_row = cursor.fetchone()
+            if zip_row is not None:
+                current_city, current_state = zip_row
+
+        profile_changed = (
+            str(first_name) != str(current_first_name) or
+            str(last_name) != str(current_last_name) or
+            str(street_num) != str(current_street_num) or
+            str(street_name) != str(current_street_name) or
+            str(zipcode) != str(current_zipcode) or
+            str(city) != str(current_city) or
+            str(state) != str(current_state)
+        )
+
+        password_changed = new_password.strip() != ''
+
+        if not profile_changed and not password_changed:
+            connection.close()
+            return redirect('/edit_profile?message=No+changes+were+made&message_type=info')
+
+        if profile_changed:
+            cursor.execute(
+                'UPDATE Bidders SET first_name = ?, last_name = ? WHERE email = ?', (first_name, last_name, email))
+
+            cursor.execute(
+                'UPDATE Address SET street_num = ?, street_name = ?, zipcode = ? WHERE address_ID = ?', (street_num, street_name, zipcode, address_id))
+
+            cursor.execute('INSERT OR REPLACE INTO Zipcode_Info(zipcode, city, state) VALUES (?, ?, ?)', (zipcode, city, state))
+
+        if password_changed:
+            hashed_password = hashing(new_password)
+            cursor.execute('UPDATE Users SET password = ? WHERE email = ?', (hashed_password, email))
+
+        connection.commit()
+        connection.close()
+
+        if profile_changed and password_changed:
+            return redirect('/edit_profile?message=Your+profile+and+password+have+been+updated&message_type=success')
+        elif profile_changed:
+            return redirect('/edit_profile?message=Your+profile+has+been+updated&message_type=success')
+        else:
+            return redirect('/edit_profile?message=Your+password+has+been+updated&message_type=success')
+
+    connection.close()
+    return redirect('/account')
+
 
 @app.route('/watchlist', methods=['GET'])
 def watchlist():
