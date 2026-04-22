@@ -64,3 +64,11 @@ app.py serves as the main program to run the application locally. It defines the
 application is being run. The application is created in a way in which data which is necessary is pulled from the database
 and never hard-coded into the program.
 
+
+
+HOW TO INSTALL:
+
+In order to use this, please install the zip package and unzip it. open it up in your preferred environment, for ease of use please do use
+pycharm, so for this example we will be using pycharm. Open up the folder in pycharm. Navigate to the python file called app.py and run it. There might be errors,
+but give it a second to load everything and a database should be created. It should be called "database.db". Double-click on "database.db"
+and a popup should show, click apply on the bottom right and then "close" or "ok". Rerun the app.py again and click on the blue link on the bottom.
