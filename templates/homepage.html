@@ -9,30 +9,35 @@
     <title>NittanyAuction</title>
 </head>
 
-<body style="background-color:AntiqueWhite; min-height:100vh;">
+<body style="background-color:White; min-height:100vh;">
+    <header style="background-color:#1e3a5f; color:white; padding:15px; text-align:center; font-size:32px; font-weight:600; box-shadow:0 3px 10px black">
+        Welcome to Nittany Auction!
+    </header>
 
-<div style="background:white; padding:20px; box-shadow:0 2px 8px black; display:flex; align-items:center; justify-content:space-between;">
-    <div style="display:flex; align-items:center; gap:8px;">
-        <h3>Nittany Auction</h3>
 
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; align-items: center;  min-height: 75vh">
         <img src="{{ url_for('static', filename='NittanyAuction_Logo.webp') }}"
              alt="Nittany Auction Logo"
              loading="lazy"
-             style="height:40px;">
+             style="height:250px;">
+        <div style="display: flex; font-size:36px; font-weight: 600">
+            Please log in to get started
+        </div>
+    <br>
+    <br>
+    <div style="display: flex; justify-content: center; align-items: center;">
+        <form action="/login">
+            <button type="submit" class="btn btn-success" style="height: 75px; width: 150px; font-size: 20px" >Login</button>
+        </form>
     </div>
-    <div>
-        <b>Welcome to Nittany Auction! Please Log in below to get started!</b>
+
     </div>
-</div>
+
 
 <br>
 <br>
 
-<div style="display: flex; justify-content: center; align-items: center;">
-    <form action="/login">
-        <button type="submit" class="btn btn-success">Login</button>
-    </form>
-</div>
+
 
 
 </body>
