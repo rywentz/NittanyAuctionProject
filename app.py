@@ -2,7 +2,6 @@
 # Original code credits to Penn State University CMPSC 431W Spring 2026 Semester
 
 import csv
-from email import message
 
 from flask import Flask, render_template, request, session, sessions, redirect, jsonify
 import sqlite3 as sql
