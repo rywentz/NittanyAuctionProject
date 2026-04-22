@@ -527,7 +527,7 @@ def render_item(category, name, id):
 
     remaining_bids = product[8] - bid_count
 
-    reserve_price = int(product[7].replace('$', '').strip())
+    reserve_price = int(product[7].replace('$', '').replace(',', '').strip())
 
     if remaining_bids <= 0:
         auction_ended = True

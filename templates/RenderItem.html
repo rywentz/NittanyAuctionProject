@@ -9,14 +9,31 @@
     <title>{{ name }}</title>
 </head>
 
-<body style="background-color:AntiqueWhite; margin:0; overflow-x:hidden;">
-<div style="position:relative; min-height:900px;"><h1 style="background-color:LightBlue; text-align: center"> {{ product[3] }} </h1>
-<h4 style = "text-align: center; background-color:Azure" >
-</h4>
+<body style="background-color:AntiqueWhite; min-height:100vh;">
+{#<h1 style="background-color:LightBlue; text-align: center; font-size: 50px; height:65px;" > Catalog </h1>#}
+{#<h4 style = "text-align: center; background-color:Azure" >#}
+{#</h4>#}
+
+<div style="background:white; padding:20px; box-shadow:0 2px 8px black; display:flex; align-items:center; justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:8px;">
+        <h3>Nittany Auction</h3>
+
+        <img src="{{ url_for('static', filename='NittanyAuction_Logo.webp') }}"
+             alt="Nittany Auction Logo"
+             loading="lazy"
+             style="height:40px;">
+    <div>
+    <form action="/welcome/?">
+        <button type="submit" class="btn btn-info">Home</button>
+    </form>
+    </div>
+</div>
+    <div style="display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: 500">
+        <b>{{ product[3] }}</b>
+    </div>
+</div>
 <br>
 <br>
-
-
 
     <!--For image loading and display-->
     <div style="background: white; min-height:760px; width:650px; position: absolute; left: 100px; border: 1px; border-radius: 16px; padding: 25px; margin-bottom: 12px; display: flex; justify-content: center; align-items: center; box-shadow: 2px 2px;">        {% if not img_src or img_src == 'None' %}
