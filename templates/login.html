@@ -25,22 +25,24 @@
     </div>
 </div>
 
-<div style="display: flex; justify-content: center; align-items: center; flex-direction: column; margin-top: 20px;">
-  <form action="/login" method="POST">
-    <div class="form-group">
-      <label for="email">Email address:</label>
-      <input type="email" class="form-control" id="email" name="email" placeholder="email@example.com">
-    </div>
-    <div class="form-group">
-      <label for="password">Password:</label>
-      <input type="password" class="form-control" id="password" name="password" placeholder="Password">
-    </div>
+<div style="display: flex; justify-content: center; align-items: center; height:60vh;">
+  <div style="background:white; padding:40px; border-radius:12px; box-shadow:0 4px 15px black; width:350px;">
+    <form action="/login" method="POST">
+        <div class="form-group">
+            <label for="email">Email address:</label>
+            <input type="email" class="form-control" id="email" name="email" placeholder="email@example.com">
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" class="form-control" id="password" name="password" placeholder="Password">
+        </div>
 
 
 
-    <button id="confirm" type="submit" class="btn btn-success">Login</button>
-    <a href="/createaccount" class="btn btn-secondary ml-2">Create Account</a>
-  </form>
+        <button id="confirm" type="submit" class="btn btn-success">Login</button>
+        <a href="/createaccount" class="btn btn-secondary ml-2">Create Account</a>
+    </form>
+  </div>
 </div>
 
 <div style= "text-align: center;">
