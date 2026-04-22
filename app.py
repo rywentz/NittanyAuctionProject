@@ -165,7 +165,7 @@ def logout():
 def view_account():
     ##pull account data from db
     #DEBUG:
-    print(session.get('role'))
+    #print(session.get('role'))
 
     if session.get('role') == 'Buyer':
         email = session.get('email')
@@ -187,10 +187,10 @@ def view_account():
         email = session.get('email')
         if check_lv_status(email): #true if lv, false if just seller
             #DEBUG
-            print(email)
-            print('should be local vendor')
+            #print(email)
+            #print('should be local vendor')
             seller = pull_lv(email)
-            print(seller)
+            #print(seller)
             role = '{} (as Local Vendor)'.format(session.get('role'))
             address_id = seller[5]
             address = pull_business_address(address_id)
@@ -542,7 +542,7 @@ def pull_lv(email):
 
     lv=cursor.fetchone()
     # DEBUG:
-    print(lv)
+    #print(lv)
     connection.close()
     return lv
 
@@ -793,12 +793,12 @@ def render_item(category, name, id):
     cursor.execute('SELECT * FROM Auction_Listings WHERE listing_id = ?', (id,))
     product = cursor.fetchone()
     #DEBUG:
-    print(product)
+    #print(product)
 
     cursor.execute('SELECT * FROM Stop_Times WHERE Listing_ID = ?', (id, ))
     stoptime = cursor.fetchone()
     #DEBUG:
-    print(stoptime)
+    #print(stoptime)
 
     in_watchlist = is_in_watchlist(bidder_email, product[0], id)
 
@@ -1098,7 +1098,7 @@ def subcatalog(category):
     connection = sql.connect('database.db')
     cursor = connection.cursor()
 
-    print(selected_filter)
+    #print(selected_filter)
 
     #Gets the subcategories INCLUDING ROOT
     cursor.execute('WITH RECURSIVE combined_categories AS (SELECT category_name, parent_category FROM Categories WHERE category_name = ? UNION ALL SELECT c.category_name, c.parent_category FROM Categories AS c JOIN combined_categories AS cc ON c.parent_category = cc.category_name) SELECT l.*, i.path FROM auction_listings AS l JOIN Image_Paths AS i ON i.product_name = l.product_name WHERE l.status = 1 AND l.category IN (SELECT category_name FROM combined_categories)', (category,))
@@ -1110,7 +1110,7 @@ def subcatalog(category):
     cursor.execute('WITH RECURSIVE combined_categories AS (SELECT category_name, parent_category FROM Categories WHERE parent_category = ? UNION ALL SELECT c.category_name, c.parent_category FROM Categories AS c JOIN combined_categories AS cc ON c.parent_category = cc.category_name) SELECT DISTINCT l.category FROM auction_listings AS l JOIN Image_Paths AS i ON i.product_name = l.product_name WHERE l.status = 1 AND l.category IN (SELECT category_name FROM combined_categories)', (category,))
     filter_list = cursor.fetchall()
     filtered = [(filter[0]) for filter in filter_list]
-    print(filtered)
+    #print(filtered)
 
     #Gets ONLY children
     cursor.execute('WITH RECURSIVE combined_categories AS (SELECT category_name, parent_category FROM Categories WHERE parent_category = ? UNION ALL SELECT c.category_name, c.parent_category FROM Categories AS c JOIN combined_categories AS cc ON c.parent_category = cc.category_name) SELECT DISTINCT l.category FROM auction_listings AS l JOIN Image_Paths AS i ON i.product_name = l.product_name WHERE l.status = 1 AND l.category IN (SELECT category_name FROM combined_categories)', (category,))
@@ -1127,7 +1127,7 @@ def subcatalog(category):
         cursor.execute('WITH RECURSIVE combined_categories AS (SELECT category_name, parent_category FROM Categories WHERE category_name = ? UNION ALL SELECT c.category_name, c.parent_category FROM Categories AS c JOIN combined_categories AS cc ON c.parent_category = cc.category_name) SELECT l.*, i.path FROM auction_listings AS l JOIN Image_Paths AS i ON i.product_name = l.product_name WHERE l.status = 1 AND l.category IN (SELECT category_name FROM combined_categories) AND l.product_name LIKE ?',(category, f'%{search_filter}%',))
         rows = cursor.fetchall()
         product_name = [(row[4], row[1], row[10], row[0], row[7]) for row in rows]
-        print("FOR SEARCH BAR " + search_filter)
+        #("FOR SEARCH BAR " + search_filter)
 
     connection.close()
     return render_template('subcatalog.html', category=category, product_name=product_name, filters=filtered)
@@ -1692,7 +1692,7 @@ if __name__ == "__main__":
 
     image = pull_image("Logo")
 
-    print(image)
+    #print(image)
 
     connection = sql.connect('database.db')
     app.run(debug=True)
