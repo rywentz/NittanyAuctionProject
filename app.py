@@ -135,7 +135,23 @@ def createaccount():
 
 @app.route('/welcome/', methods=['POST', 'GET'])  # <email>
 def welcome():
-    return render_template('welcome.html', email=session.get('email'), role=session.get('role'))
+    connection = sql.connect('database.db')
+    cursor = connection.cursor()
+
+    #Gets hot items
+    cursor.execute('SELECT A.*, I.path FROM Auction_Listings AS A, Image_paths AS I WHERE listing_id = 726 AND path = "ermmo.webp"')
+    hotitem1 = cursor.fetchone()
+    cursor.execute('SELECT A.*, I.path FROM Auction_Listings AS A, Image_paths AS I WHERE listing_id = 750 AND path = "gwelectricscooter.webp"')
+    hotitem2 = cursor.fetchone()
+    cursor.execute('SELECT A.*, I.path FROM Auction_Listings AS A, Image_paths AS I WHERE listing_id = 1733 AND path = "s23.webp"')
+    hotitem3 = cursor.fetchone()
+
+    connection.close()
+
+
+
+
+    return render_template('welcome.html', email=session.get('email'), role=session.get('role'), hotitem1=hotitem1, hotitem2=hotitem2, hotitem3=hotitem3)
 
 
 @app.route('/logout')

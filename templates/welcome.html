@@ -54,11 +54,42 @@
 <br>
 
 
+<div style="display:flex; justify-content: center; align-items: center; ">
+<div style="display: flex; flex-direction: column; justify-content: flex-start; align-items: center; height:75vh; width:80vw; margin:0; gap: 35px; border-radius: 16px; box-shadow:0 3px 25px black; background-color: #1e3a5f; overflow: hidden">
+<!--- For random hot items (not really) --->
+<div style=" height: 70px; width: 100%;display: flex;align-items: center; justify-content: center;font-size: 55px;font-weight: 500; color: black; background-color: aliceblue">🚨🔥TRENDING ITEMS🔥🚨</div>
+    <div style="display:flex; gap:100px";>
 
-<div style="display: flex; justify-content: center; align-items: center; height:50vh; margin:0; gap: 10px">
+        <div style="width:250px; height:285px; flex-shrink:0; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; border: 10px solid gray; background: aliceblue;">
+            <a href="/catalog/Toys%20&%20Video%20Games/ER:%20MMO/726">
+            <img  src= "{{ url_for('static', filename= hotitem1[10]) }}" alt= "{{ hotitem1[3] }}" loading="lazy" style="width: 100%; height: 100%; object-fit: contain;">
+            </a>
+        </div>
+
+        <div style="width:250px; height:250px; flex-shrink:0; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; border: 10px solid gray; background: aliceblue;">
+            <a href="/catalog/Sports%20&%20Outdoors/GW%20Electric%20Scooter/750">
+            <img  src= "{{ url_for('static', filename= hotitem2[10]) }}" alt= "{{ hotitem2[3] }}" loading="lazy" style="width: 100%; height: 100%; object-fit: contain;">
+            </a>
+        </div>
+
+        <div style="width:250px; height:250px; flex-shrink:0; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; border: 10px solid gray; background: aliceblue; ">
+            <a href="/catalog/Electrical%20Supplies/S23/1733">
+            <img  src= "{{ url_for('static', filename= hotitem3[10]) }}" alt= "{{ hotitem3[3] }}" loading="lazy" style="width: 100%; height: 100%; object-fit: contain;">
+            </a>
+        </div>
+
+
+
+    </div>
+
+      <div style="display: flex; font-size: 36px; font-weight: 500; color: white">
+            OR
+
+        </div>
+
 
     <form action="/catalog">
-        <button style="font-size: 24px; background-color: darkblue; text-decoration-color: aliceblue;" type="submit" class="btn btn-success">Catalog</button>
+        <button style="font-size: 24px; background-color: darkblue; text-decoration-color: aliceblue;" type="submit" class="btn btn-success"> View Full Catalog</button>
     </form>
 
     {% if role == 'Seller' or role == 'HelpDesk' %}
@@ -74,6 +105,9 @@
     {% endif %}
 
 </div>
+</div>
+
+
 
 {# Popup functionality for if the user is not a seller and tries to list an item #}
 <script>
